@@ -484,6 +484,12 @@ class LabelerWindow(QWidget):
 
             # label is not there yet. But the image has some labels already
             else:
+                # remove other labels
+                for l in self.assigned_labels[img_name]:
+                    if l != label:
+                        self.assigned_labels[img_name].remove(l)
+
+                # add selected label
                 self.assigned_labels[img_name].append(label)
 
                 # path to copy/move images
