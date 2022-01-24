@@ -17,7 +17,8 @@ QPushButton#blueButton:hover:pressed {
 
 QLabel#selectedFolderLabel {
 background-color: white;
-border: 1px solid #aaa
+border: 1px solid #aaa;
+color: black;
 }
 
 QLabel#headline {
