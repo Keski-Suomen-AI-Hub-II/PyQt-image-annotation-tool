@@ -10,6 +10,7 @@ from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
+from PIL import Image
 
 
 def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
@@ -46,7 +47,7 @@ class SetupWindow(QWidget):
         self.height = 940
 
         # State variables
-        self.selected_folder = ''
+        self.selected_folder = '/Users/anri/PyQt-image-annotation-tool/img'
         self.selected_labels = ''
         self.num_labels = 0
         self.label_inputs = []
@@ -63,8 +64,9 @@ class SetupWindow(QWidget):
         # self.headline_num_labels = QLabel('3. How many unique labels do you want to assign?', self)
 
         self.selected_folder_label = QLabel(self)
-        self.error_message = QLabel(self)
+        self.selected_folder_label.setText(self.selected_folder)
 
+        self.error_message = QLabel(self)
         # Buttons
         self.browse_button = QtWidgets.QPushButton("Browse", self)
         self.confirm_num_labels = QtWidgets.QPushButton("Ok", self)
@@ -147,6 +149,16 @@ class SetupWindow(QWidget):
         except:
             print("Can't load custom stylesheet.")
 
+        # preloads input fields with predefined labels
+        labels = ['Teräv.', 'Ei', 'Epävarma']
+        print(labels)
+        self.numLabelsInput.setText(str(len(labels)))
+        self.generate_label_inputs()
+
+        # fill the input fileds with loaded labels
+        for input, label in zip(self.label_inputs, labels):
+            input.setText(label)
+
     def init_radio_buttons(self):
         """
         Creates section with mode selection
@@ -158,26 +170,20 @@ class SetupWindow(QWidget):
         radio_label.move(60, top_margin)
 
         radiobutton = QRadioButton(
-            "csv (Images in selected folder are labeled and then csv file with assigned labels is generated.)", self)
+            "csv (Images in selected folder are labeled and then csv file with assigned labels is generated)", self)
         radiobutton.setChecked(True)
         radiobutton.mode = "csv"
         radiobutton.toggled.connect(self.mode_changed)
         radiobutton.move(60, top_margin + 35)
 
+        """
         radiobutton = QRadioButton(
             "copy (Creates folder for each label. Labeled images are copied to these folders. Csv is also generated)",
             self)
         radiobutton.mode = "copy"
         radiobutton.toggled.connect(self.mode_changed)
         radiobutton.move(60, top_margin + 65)
-
-        radiobutton = QRadioButton(
-            "move (Creates folder for each label. Labeled images are moved to these folders. Csv is also generated)",
-            self)
-        radiobutton.mode = "move"
-        radiobutton.toggled.connect(self.mode_changed)
-        radiobutton.move(60, top_margin + 95)
-
+        """
     def mode_changed(self):
         """
         Sets new mode (one of: csv, copy, move)
@@ -389,7 +395,7 @@ class LabelerWindow(QWidget):
         ui_line = QLabel(self)
         ui_line.setGeometry(20, 98, 1012, 1)
         ui_line.setStyleSheet('background-color: black')
-
+        
         # apply custom styles
         try:
             styles_path = "./styles.qss"
@@ -445,6 +451,16 @@ class LabelerWindow(QWidget):
                 y_shift = 0
 
             button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
+
+        open_img_btn = QtWidgets.QPushButton("Open", self)
+        open_img_btn.move(self.img_panel_width - 80, 0)
+        open_img_btn.clicked.connect(self.open_img)
+
+    def open_img(self):
+        """Open current image with a defaul viewer"""
+        path = self.img_paths[self.counter]
+        img = Image.open(path)
+        img.show()
 
     def set_label(self, label):
         """
