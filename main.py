@@ -11,9 +11,11 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialo
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
 from PIL import Image
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 
-def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
+def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg', '.dcm')):
     '''
     :param dir: folder with files
     :param extensions: tuple with file endings. e.g. ('.jpg', '.png'). Files with these endings will be added to img_paths
@@ -21,7 +23,6 @@ def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg')):
     '''
 
     img_paths = []
-
     for filename in os.listdir(dir):
         if filename.lower().endswith(extensions):
             img_paths.append(os.path.join(dir, filename))
@@ -386,7 +387,9 @@ class LabelerWindow(QWidget):
         self.image_box.setAlignment(Qt.AlignTop)
 
         # image name
-        self.img_name_label.setText(self.img_paths[self.counter])
+        path = self.img_paths[self.counter]
+        filename = os.path.split(path)[-1]
+        self.img_name_label.setText(filename)
 
         # progress bar
         self.progress_bar.setText(f'image 1 of {self.num_images}')
@@ -452,14 +455,32 @@ class LabelerWindow(QWidget):
 
             button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
 
-        open_img_btn = QtWidgets.QPushButton("Open", self)
+        # add button for opening the current image with matplotlib
+        open_img_btn = QtWidgets.QPushButton("Open with mpl", self)
         open_img_btn.move(self.img_panel_width - 80, 0)
-        open_img_btn.clicked.connect(self.open_img)
+        open_img_btn.clicked.connect(self.open_img_mp)
 
-    def open_img(self):
+        # add button for opening the current image with the defaul viewer
+        open_img_btn2 = QtWidgets.QPushButton("Open with viewer", self)
+        open_img_btn2.move(self.img_panel_width - 80, 40)
+        open_img_btn2.clicked.connect(self.open_img_def)
+
+    def open_img_mp(self):
+        """Open current image with matplotlib"""
+        path = self.img_paths[self.counter]
+
+        image = mpimg.imread(path)
+        plt.imshow(image)
+        plt.axis('off')
+        plt.show()
+
+    def open_img_def(self):
         """Open current image with a defaul viewer"""
         path = self.img_paths[self.counter]
+
+        path = self.img_paths[self.counter]
         img = Image.open(path)
+
         img.show()
 
     def set_label(self, label):
@@ -556,7 +577,7 @@ class LabelerWindow(QWidget):
                 path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
             self.set_image(path)
-            self.img_name_label.setText(path)
+            self.img_name_label.setText(filename)
             self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
             self.set_button_color(filename)
             self.csv_generated_message.setText('')
@@ -584,7 +605,7 @@ class LabelerWindow(QWidget):
                     path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
                 self.set_image(path)
-                self.img_name_label.setText(path)
+                self.img_name_label.setText(filename)
                 self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
 
                 self.set_button_color(filename)
