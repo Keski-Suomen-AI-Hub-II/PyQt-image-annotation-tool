@@ -468,26 +468,35 @@ class LabelerWindow(QWidget):
         open_img_btn2.move(self.img_panel_width - 150, next_prev_top_margin)
         open_img_btn2.clicked.connect(self.open_img_def)
 
+    def scale_dicom(self, path):
+        """reads dicom pixels form a file and returns a scaled np array"""
+        ds = dcmread(path)
+        img = ds.pixel_array.astype(float)
+        scaled = (np.maximum(img, 0) / img.max()) * 255.0
+        scaled = np.uint8(scaled)
+        return scaled
+
+
     def open_img_mp(self):
         """Open current image with matplotlib"""
         path = self.img_paths[self.counter]
 
+        img = self.scale_dicom(path)
         # read dicom image
-        ds = dcmread(path)
+        #ds = dcmread(path)
 
-        plt.imshow(ds.pixel_array, cmap='gray')
+        #plt.imshow(ds.pixel_array, cmap='gray')
+        plt.imshow(img, cmap='gray')
         plt.axis('off')
         plt.show()
 
     def open_img_def(self):
         """Open current image with a defaul viewer"""
         path = self.img_paths[self.counter]
-
-        # read dicom image
-        ds = dcmread(path)
+        # read and scale dicom image from path
+        img = self.scale_dicom(path)
         # convert to PIL image
-        img = Image.fromarray(ds.pixel_array)
-        #img = Image.open(path)
+        img = Image.fromarray(img)
         img.show()
 
     def set_label(self, label):
@@ -624,10 +633,10 @@ class LabelerWindow(QWidget):
         :param path: relative path to the image that should be show
         """
 
-        # read dicom image
-        ds = dcmread(path)
+        # read and scale dicom image
+        img = self.scale_dicom(path)
         # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
-        img = Image.fromarray(ds.pixel_array)
+        img = Image.fromarray(img)
         # convert to pixmap
         # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
         img = img.convert("RGBA")
