@@ -481,11 +481,9 @@ class LabelerWindow(QWidget):
         """Open current image with matplotlib"""
         path = self.img_paths[self.counter]
 
+        # read and scale dicom image
         img = self.scale_dicom(path)
-        # read dicom image
-        #ds = dcmread(path)
 
-        #plt.imshow(ds.pixel_array, cmap='gray')
         plt.imshow(img, cmap='gray')
         plt.axis('off')
         plt.show()
