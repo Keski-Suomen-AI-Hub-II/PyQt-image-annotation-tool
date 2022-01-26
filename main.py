@@ -6,11 +6,12 @@ import sys
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIntValidator, QKeySequence
+from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
 from xlsxwriter.workbook import Workbook
 from PIL import Image
+from pydicom import dcmread
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
@@ -48,7 +49,7 @@ class SetupWindow(QWidget):
         self.height = 940
 
         # State variables
-        self.selected_folder = '/Users/anri/PyQt-image-annotation-tool/img'
+        self.selected_folder = './img' # for saving time
         self.selected_labels = ''
         self.num_labels = 0
         self.label_inputs = []
@@ -151,7 +152,7 @@ class SetupWindow(QWidget):
             print("Can't load custom stylesheet.")
 
         # preloads input fields with predefined labels
-        labels = ['Teräv.', 'Ei', 'Epävarma']
+        labels = ['Spiking', 'No spiking', 'Unsure']
         print(labels)
         self.numLabelsInput.setText(str(len(labels)))
         self.generate_label_inputs()
@@ -411,11 +412,11 @@ class LabelerWindow(QWidget):
 
         # Add "Prev Image" and "Next Image" buttons
         next_prev_top_margin = 50
-        prev_im_btn = QtWidgets.QPushButton("Prev", self)
+        prev_im_btn = QtWidgets.QPushButton("[p]rev", self)
         prev_im_btn.move(self.img_panel_width + 20, next_prev_top_margin)
         prev_im_btn.clicked.connect(self.show_prev_image)
 
-        next_im_btn = QtWidgets.QPushButton("Next", self)
+        next_im_btn = QtWidgets.QPushButton("[n]ext", self)
         next_im_btn.move(self.img_panel_width + 140, next_prev_top_margin)
         next_im_btn.clicked.connect(self.show_next_image)
 
@@ -435,7 +436,9 @@ class LabelerWindow(QWidget):
         # Create button for each label
         x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         for i, label in enumerate(self.labels):
+            bttn_label = '[{j}] {l}'.format(j = (i + 1) % 10, l = label)
             self.label_buttons.append(QtWidgets.QPushButton(label, self))
+            #self.label_buttons.append(QtWidgets.QPushButton(bttn_label, self))
             button = self.label_buttons[i]
 
             # create click event (set label)
@@ -457,20 +460,22 @@ class LabelerWindow(QWidget):
 
         # add button for opening the current image with matplotlib
         open_img_btn = QtWidgets.QPushButton("Open with mpl", self)
-        open_img_btn.move(self.img_panel_width - 80, 0)
+        open_img_btn.move(self.img_panel_width - 150, next_prev_top_margin - 30)
         open_img_btn.clicked.connect(self.open_img_mp)
 
         # add button for opening the current image with the defaul viewer
         open_img_btn2 = QtWidgets.QPushButton("Open with viewer", self)
-        open_img_btn2.move(self.img_panel_width - 80, 40)
+        open_img_btn2.move(self.img_panel_width - 150, next_prev_top_margin)
         open_img_btn2.clicked.connect(self.open_img_def)
 
     def open_img_mp(self):
         """Open current image with matplotlib"""
         path = self.img_paths[self.counter]
 
-        image = mpimg.imread(path)
-        plt.imshow(image)
+        # read dicom image
+        ds = dcmread(path)
+
+        plt.imshow(ds.pixel_array, cmap='gray')
         plt.axis('off')
         plt.show()
 
@@ -478,9 +483,11 @@ class LabelerWindow(QWidget):
         """Open current image with a defaul viewer"""
         path = self.img_paths[self.counter]
 
-        path = self.img_paths[self.counter]
-        img = Image.open(path)
-
+        # read dicom image
+        ds = dcmread(path)
+        # convert to PIL image
+        img = Image.fromarray(ds.pixel_array)
+        #img = Image.open(path)
         img.show()
 
     def set_label(self, label):
@@ -617,7 +624,17 @@ class LabelerWindow(QWidget):
         :param path: relative path to the image that should be show
         """
 
-        pixmap = QPixmap(path)
+        # read dicom image
+        ds = dcmread(path)
+        # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
+        img = Image.fromarray(ds.pixel_array)
+        # convert to pixmap
+        # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
+        img = img.convert("RGBA")
+        data = img.tobytes("raw","RGBA")
+        image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
+        pixmap = QPixmap.fromImage(image)
+        #pixmap = QPixmap(path)
 
         # get original image dimensions
         img_width = pixmap.width()
