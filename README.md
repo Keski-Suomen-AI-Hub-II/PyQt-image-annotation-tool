@@ -14,7 +14,6 @@ label(s) to these images.
 - it allows you to choose number and names of your labels
 - it can move/copy images to folders that are named as desired labels.
 - it can generate .csv file with assigned labels.
-- it can generate .xlsx file with assigned labels.
 - all settings are handled via GUI
 
 ## Installation and usage
@@ -29,6 +28,9 @@ label(s) to these images.
     cd PyQt-image-annotation-tool
     pip install -r requirements.txt
     ```
+    Some DICOM files might require GDCM and pylibjpeg.
+    For installing see: https://pydicom.github.io/pydicom/stable/tutorials/installation.html#install-the-optional-libraries
+
 3. Run the app (use ```python3``` for Python 3)
    ```bash
     python main.py

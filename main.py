@@ -338,7 +338,7 @@ class LabelerWindow(QWidget):
         self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
-        self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
+        #self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
 
         # create label folders
         if mode == 'copy' or mode == 'move':
@@ -361,8 +361,8 @@ class LabelerWindow(QWidget):
         self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 400, 20)
 
         # "create xlsx" checkbox
-        self.generate_xlsx_checkbox.setChecked(False)
-        self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
+        #self.generate_xlsx_checkbox.setChecked(False)
+        #self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image headline
         self.curr_image_headline.setGeometry(20, 10, 300, 20)
@@ -474,7 +474,6 @@ class LabelerWindow(QWidget):
         scaled = (np.maximum(img, 0) / img.max()) * 255.0
         scaled = np.uint8(scaled)
         return scaled
-
 
     def open_img_mp(self):
         """Open current image with matplotlib"""
@@ -595,7 +594,6 @@ class LabelerWindow(QWidget):
             self.set_button_color(filename)
             self.csv_generated_message.setText('')
 
-
         # change button color if this is last image in dataset
         elif self.counter == self.num_images - 1:
             path = self.img_paths[self.counter]
@@ -681,12 +679,14 @@ class LabelerWindow(QWidget):
         self.csv_generated_message.setText(message)
         print(message)
 
+        """
         if self.generate_xlsx_checkbox.isChecked():
             try:
                 self.csv_to_xlsx(csv_file_path)
             except:
                 print('Generating xlsx file failed.')
-
+        """
+        
     def csv_to_xlsx(self, csv_file_path):
         """
         converts csv file to xlsx file
@@ -750,7 +750,6 @@ class LabelerWindow(QWidget):
     def create_label_folders(labels, folder):
         for label in labels:
             make_folder(os.path.join(folder, label))
-
 
 if __name__ == '__main__':
     # run the application
