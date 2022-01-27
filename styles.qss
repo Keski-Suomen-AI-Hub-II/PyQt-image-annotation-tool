@@ -10,7 +10,6 @@ QPushButton#blueButton:hover {
     background-color: #1976D2;
 }
 
-
 QPushButton#blueButton:hover:pressed {
     background-color: #0D47A1;
 }
@@ -25,6 +24,8 @@ QLabel#headline {
 font-weight: bold;
 }
 
-
+QGroupBox::title {
+padding-bottom: 0;
+}
 
 

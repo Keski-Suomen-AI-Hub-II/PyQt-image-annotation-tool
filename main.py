@@ -13,8 +13,6 @@ from xlsxwriter.workbook import Workbook
 from PIL import Image
 from pydicom import dcmread
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-
 
 def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg', '.dcm')):
     '''
@@ -109,7 +107,8 @@ class SetupWindow(QWidget):
         self.browse_button.clicked.connect(self.pick_new)
 
         # Input number of labels
-        top_margin_num_labels = 260
+        #top_margin_num_labels = 260
+        top_margin_num_labels = 115
         self.headline_num_labels.move(60, top_margin_num_labels)
         self.headline_num_labels.setObjectName("headline")
 
@@ -129,7 +128,8 @@ class SetupWindow(QWidget):
         self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
         # Next Button
-        self.next_button.move(360, 630)
+        #self.next_button.move(360, 630)
+        self.next_button.move(360, 490)
         self.next_button.clicked.connect(self.continue_app)
         self.next_button.setObjectName("blueButton")
 
@@ -138,11 +138,11 @@ class SetupWindow(QWidget):
         self.error_message.setAlignment(Qt.AlignCenter)
         self.error_message.setStyleSheet('color: red; font-weight: bold')
 
-        self.init_radio_buttons()
+        #self.init_radio_buttons() # for changing modes
 
         #initiate the ScrollArea
-        self.scroll.setGeometry(60, 400, 300, 200)
-
+        #self.scroll.setGeometry(60, 400, 300, 200)
+        self.scroll.setGeometry(60, 260, 300, 200)
         # apply custom styles
         try:
             styles_path = "./styles.qss"
@@ -165,12 +165,12 @@ class SetupWindow(QWidget):
         """
         Creates section with mode selection
         """
-
+        
         top_margin = 115
         radio_label = QLabel('2. Select mode', self)
         radio_label.setObjectName("headline")
         radio_label.move(60, top_margin)
-
+        
         radiobutton = QRadioButton(
             "csv (Images in selected folder are labeled and then csv file with assigned labels is generated)", self)
         radiobutton.setChecked(True)
@@ -178,14 +178,13 @@ class SetupWindow(QWidget):
         radiobutton.toggled.connect(self.mode_changed)
         radiobutton.move(60, top_margin + 35)
 
-        """
         radiobutton = QRadioButton(
             "copy (Creates folder for each label. Labeled images are copied to these folders. Csv is also generated)",
             self)
         radiobutton.mode = "copy"
         radiobutton.toggled.connect(self.mode_changed)
         radiobutton.move(60, top_margin + 65)
-        """
+        
     def mode_changed(self):
         """
         Sets new mode (one of: csv, copy, move)
