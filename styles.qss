@@ -28,4 +28,8 @@ QGroupBox::title {
 padding-bottom: 0;
 }
 
+QScrollArea#image_panel {
+background-color: #000;
+}
+
 

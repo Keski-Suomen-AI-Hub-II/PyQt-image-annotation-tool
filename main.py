@@ -1,5 +1,6 @@
 import csv
 import os
+from re import X
 import shutil
 import sys
 
@@ -8,7 +9,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
-    QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout
+    QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout, QSizePolicy, QAction, QMenu, QMainWindow
 from xlsxwriter.workbook import Workbook
 from PIL import Image
 from pydicom import dcmread
@@ -303,7 +304,7 @@ class SetupWindow(QWidget):
             self.error_message.setText(message)
 
 
-class LabelerWindow(QWidget):
+class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
     def __init__(self, labels, input_folder, mode):
         super().__init__()
 
@@ -327,18 +328,32 @@ class LabelerWindow(QWidget):
         self.assigned_labels = {}
         self.mode = mode
 
+        # zoom factor for the image in labeler panel 
+        self.scale_factor = 1.0
+
         # initialize list to save all label buttons
         self.label_buttons = []
 
         # Initialize Labels
         self.image_box = QLabel(self)
+        self.image_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.image_box.setScaledContents(True)
+
+        self.img_scroll_area = QScrollArea(self) # for image resizing
+        self.img_scroll_area.setObjectName('image_panel')
+        self.img_scroll_area.setWidget(self.image_box)
+
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
         self.curr_image_headline = QLabel('Current image', self)
-        self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
+        #self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
         #self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
+
+        # for zoom in/out  
+        self.create_actions()
+        self.create_menus()
 
         # create label folders
         if mode == 'copy' or mode == 'move':
@@ -375,16 +390,19 @@ class LabelerWindow(QWidget):
         self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
 
         # csv note
-        self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
+        #self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
 
         # message that csv was generated
-        self.csv_generated_message.setGeometry(self.img_panel_width + 20, 660, 800, 20)
+        self.csv_generated_message.setGeometry(self.img_panel_width + 30, 660, 800, 20)
         self.csv_generated_message.setStyleSheet('color: #43A047')
 
         # show image
         self.set_image(self.img_paths[0])
-        self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
-        self.image_box.setAlignment(Qt.AlignTop)
+
+        # container for the image
+        self.img_scroll_area.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
+        self.img_scroll_area.setAlignment(Qt.AlignCenter)
+        #self.image_box.setGeometry(20, 120, self.img_panel_width, self.img_panel_height)
 
         # image name
         path = self.img_paths[self.counter]
@@ -428,16 +446,14 @@ class LabelerWindow(QWidget):
 
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
-        next_im_btn.move(self.img_panel_width + 20, 600)
+        next_im_btn.move(self.img_panel_width + 30, 600)
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes': self.generate_csv(filename))
         next_im_btn.setObjectName("blueButton")
 
         # Create button for each label
         x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         for i, label in enumerate(self.labels):
-            bttn_label = '[{j}] {l}'.format(j = (i + 1) % 10, l = label)
             self.label_buttons.append(QtWidgets.QPushButton(label, self))
-            #self.label_buttons.append(QtWidgets.QPushButton(bttn_label, self))
             button = self.label_buttons[i]
 
             # create click event (set label)
@@ -467,8 +483,20 @@ class LabelerWindow(QWidget):
         open_img_btn2.move(self.img_panel_width - 150, next_prev_top_margin)
         open_img_btn2.clicked.connect(self.open_img_def)
 
+    def create_actions(self):
+        """Zoom in and out actions"""
+        self.zoom_in_action = QAction("Zoom &In (25%)", self, shortcut="Ctrl++", enabled=True, triggered=self.zoom_in)
+        self.zoom_out_action = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-", enabled=True, triggered=self.zoom_out)
+
+    def create_menus(self):
+        """Create a menu item for zoom actions"""
+        self.viewMenu = QMenu("&View", self)
+        self.viewMenu.addAction(self.zoom_in_action)
+        self.viewMenu.addAction(self.zoom_out_action)
+        self.menuBar().addMenu(self.viewMenu)
+
     def scale_dicom(self, path):
-        """reads dicom pixels form a file and returns a scaled np array"""
+        """reads dicom pixels from a file and returns a scaled np array"""
         ds = dcmread(path)
         img = ds.pixel_array.astype(float)
         scaled = (np.maximum(img, 0) / img.max()) * 255.0
@@ -588,6 +616,9 @@ class LabelerWindow(QWidget):
             if self.mode == 'move' and filename in self.assigned_labels.keys():
                 path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
+            # reset the image scaling
+            self.scale_factor = 1
+
             self.set_image(path)
             self.img_name_label.setText(filename)
             self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
@@ -615,6 +646,9 @@ class LabelerWindow(QWidget):
                 if self.mode == 'move' and filename in self.assigned_labels.keys():
                     path = os.path.join(self.input_folder, self.assigned_labels[filename][0], filename)
 
+                # reset the image scaling
+                self.scale_factor = 1
+
                 self.set_image(path)
                 self.img_name_label.setText(filename)
                 self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
@@ -627,23 +661,25 @@ class LabelerWindow(QWidget):
         displays the image in GUI
         :param path: relative path to the image that should be show
         """
-
-        # read and scale dicom image
-        img = self.scale_dicom(path)
-        # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
-        img = Image.fromarray(img)
-        # convert to pixmap
-        # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
-        img = img.convert("RGBA")
-        data = img.tobytes("raw","RGBA")
-        image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
-        pixmap = QPixmap.fromImage(image)
+        if (path.split('.')[-1].lower() != 'dcm'): # file is not DICOM -> create a pixmap from file
+            pixmap = QPixmap(path)
+        else:
+            # read and scale dicom image
+            img = self.scale_dicom(path)
+            # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
+            img = Image.fromarray(img)
+            # convert to pixmap
+            # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
+            img = img.convert("RGBA")
+            data = img.tobytes("raw","RGBA")
+            image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
+            pixmap = QPixmap.fromImage(image)
         #pixmap = QPixmap(path)
 
         # get original image dimensions
         img_width = pixmap.width()
         img_height = pixmap.height()
-
+        """
         # scale the image properly so it fits into the image window ()
         margin = 20
         if img_width >= img_height:
@@ -651,8 +687,45 @@ class LabelerWindow(QWidget):
 
         else:
             pixmap = pixmap.scaledToHeight(self.img_panel_height - margin)
+        """
 
         self.image_box.setPixmap(pixmap)
+        self.image_box.adjustSize()
+
+
+        zoom_out_iter = 0 # for avoiding infinite loops
+
+        # the image is larger than the container (at least 50 px larger) 
+        # -> scale down iteratively the image until it fits the container
+        while self.img_panel_width + 50 < self.image_box.width() or self.img_panel_height + 50 < self.image_box.height():
+            self.zoom_out()
+            zoom_out_iter +=1
+            if zoom_out_iter >= 20: break # max iteration cap for scaling
+
+    def zoom_in(self):
+        self.scale_image(1.25)
+
+    def zoom_out(self):
+        self.scale_image(0.8)
+
+    def scale_image(self, factor):
+        """scale the image container size with given factor"""
+        self.scale_factor *= factor
+        self.image_box.resize(self.scale_factor * self.image_box.pixmap().size())
+
+        # adjust the scroll bar accordingly as the the image is scaled up or down
+        self.adjust_scroll_bar(self.img_scroll_area.horizontalScrollBar(), factor)
+        self.adjust_scroll_bar(self.img_scroll_area.verticalScrollBar(), factor)
+
+        # disable zoom in or out if the scale factor is too large or small
+        # otherwise the program might crash
+        self.zoom_in_action.setEnabled(self.scale_factor < 5.0)
+        self.zoom_out_action.setEnabled(self.scale_factor > 0.1)
+
+    def adjust_scroll_bar(self, scroll_bar, factor):
+        """Adjust the scroll bars so that when zooming in focus remains at the center of the image"""
+        scroll_bar.setValue(int(factor * scroll_bar.value()
+                               + ((factor - 1) * scroll_bar.pageStep() / 2)))
 
     def generate_csv(self, out_filename):
         """
@@ -686,7 +759,7 @@ class LabelerWindow(QWidget):
             except:
                 print('Generating xlsx file failed.')
         """
-        
+
     def csv_to_xlsx(self, csv_file_path):
         """
         converts csv file to xlsx file
