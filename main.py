@@ -479,6 +479,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
             button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
 
+        """
         # add button for opening the current image with matplotlib
         open_img_btn = QtWidgets.QPushButton("Open with mpl", self)
         open_img_btn.move(self.img_panel_width - 150, next_prev_top_margin - 30)
@@ -488,6 +489,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         open_img_btn2 = QtWidgets.QPushButton("Open with viewer", self)
         open_img_btn2.move(self.img_panel_width - 150, next_prev_top_margin)
         open_img_btn2.clicked.connect(self.open_img_def)
+        """
 
     def create_actions(self):
         """Zoom in and out actions"""
