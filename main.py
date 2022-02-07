@@ -395,7 +395,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # create 'show next automatically' checkbox
         self.show_next_checkbox.setChecked(False)
-        self.show_next_checkbox.setGeometry(self.img_panel_width + 25, 10, 400, 100)
+        self.show_next_checkbox.setGeometry(self.img_panel_width + 25, 5, 400, 100)
 
         # "create xlsx" checkbox
         #self.generate_xlsx_checkbox.setChecked(False)
@@ -437,7 +437,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.progress_bar.setText(f'Image 1 of {self.num_images}')
 
         # labeled %
-        self.update_progress()
+        self.update_labeled_progress()
 
         # draw line to for better UX
         ui_line = QLabel(self)
@@ -453,8 +453,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             print("Can't load custom stylesheet.")
 
     # update labeled out of total images percentage
-    def update_progress(self):
+    def update_labeled_progress(self):
         self.labeled_percentage.setText(f'Labeled: {round(100 * (len(self.assigned_labels) / self.num_images), 2)}%')
+
 
     def init_buttons(self):
 
@@ -629,7 +630,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 shutil.move(img_path, copy_to)
 
         # update labeled % progress
-        self.update_progress()
+        self.update_labeled_progress()
 
         # load next image
         if self.show_next_checkbox.isChecked():
@@ -657,7 +658,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
             self.set_image(path)
             self.img_name_label.setText(filename)
-            self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
+            self.progress_bar.setText(f'Image {self.counter + 1} of {self.num_images}')
             self.set_button_color(filename)
             self.csv_generated_message.setText('')
 
@@ -687,7 +688,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
                 self.set_image(path)
                 self.img_name_label.setText(filename)
-                self.progress_bar.setText(f'image {self.counter + 1} of {self.num_images}')
+                self.progress_bar.setText(f'Image {self.counter + 1} of {self.num_images}')
 
                 self.set_button_color(filename)
                 self.csv_generated_message.setText('')
