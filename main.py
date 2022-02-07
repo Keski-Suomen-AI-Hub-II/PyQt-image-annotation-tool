@@ -366,7 +366,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
-        self.curr_image_headline = QLabel('Current image', self)
+        self.curr_image_headline = QLabel('Current image:', self)
         #self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
@@ -394,21 +394,21 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # create 'show next automatically' checkbox
         self.show_next_checkbox.setChecked(False)
-        self.show_next_checkbox.setGeometry(self.img_panel_width + 20, 10, 400, 20)
+        self.show_next_checkbox.setGeometry(self.img_panel_width + 25, 10, 400, 100)
 
         # "create xlsx" checkbox
         #self.generate_xlsx_checkbox.setChecked(False)
         #self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image headline
-        self.curr_image_headline.setGeometry(20, 10, 300, 20)
+        self.curr_image_headline.setGeometry(20, 10, 300, 110)
         self.curr_image_headline.setObjectName('headline')
 
         # image name label
-        self.img_name_label.setGeometry(20, 40, self.img_panel_width, 20)
+        self.img_name_label.setGeometry(120, 10, self.img_panel_width, 110)
 
         # progress bar (how many images have I labeled so far)
-        self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
+        self.progress_bar.setGeometry(20, 80, self.img_panel_width, 20)
 
         # csv note
         #self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
@@ -435,7 +435,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # draw line to for better UX
         ui_line = QLabel(self)
-        ui_line.setGeometry(20, 98, 1012, 1)
+        ui_line.setGeometry(20, 105, 1012, 1)
         ui_line.setStyleSheet('background-color: black')
         
         # apply custom styles
@@ -449,7 +449,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
     def init_buttons(self):
 
         # Add "Prev Image" and "Next Image" buttons
-        next_prev_top_margin = 50
+        next_prev_top_margin = 70 #50
         prev_im_btn = QtWidgets.QPushButton("[p]rev", self)
         prev_im_btn.move(self.img_panel_width + 20, next_prev_top_margin)
         prev_im_btn.clicked.connect(self.show_prev_image)
