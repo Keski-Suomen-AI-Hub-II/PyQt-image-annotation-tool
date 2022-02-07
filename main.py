@@ -15,17 +15,23 @@ from PIL import Image
 from pydicom import dcmread
 import matplotlib.pyplot as plt
 
-def get_img_paths(dir, extensions=('.jpg', '.png', '.jpeg', '.dcm')):
+def get_img_paths(dir, extensions=('.dcm', '')):
     '''
     :param dir: folder with files
-    :param extensions: tuple with file endings. e.g. ('.jpg', '.png'). Files with these endings will be added to img_paths
+    :param extensions: tuple with file endings. e.g. ('.dcm', ''). Files with these endings will be added to img_paths
     :return: list of all filenames
     '''
 
     img_paths = []
     for filename in os.listdir(dir):
         if filename.lower().endswith(extensions):
-            img_paths.append(os.path.join(dir, filename))
+            current_file = os.path.join(dir, filename)
+            try:
+                ds = dcmread(current_file)
+                img_paths.append(current_file)
+            except:
+                # not dcm ignore
+                print('file is not dcm')
 
     return img_paths
 
@@ -661,37 +667,24 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         displays the image in GUI
         :param path: relative path to the image that should be show
         """
-        if (path.split('.')[-1].lower() != 'dcm'): # file is not DICOM -> create a pixmap from file
-            pixmap = QPixmap(path)
-        else:
-            # read and scale dicom image
-            img = self.scale_dicom(path)
-            # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
-            img = Image.fromarray(img)
-            # convert to pixmap
-            # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
-            img = img.convert("RGBA")
-            data = img.tobytes("raw","RGBA")
-            image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
-            pixmap = QPixmap.fromImage(image)
+        
+        #if (path.split('.')[-1].lower() != 'dcm'): # file is not DICOM -> create a pixmap from file
+        #    pixmap = QPixmap(path)
+        
+        # read and scale dicom image
+        img = self.scale_dicom(path)
+        # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
+        img = Image.fromarray(img)
+        # convert to pixmap
+        # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
+        img = img.convert("RGBA")
+        data = img.tobytes("raw","RGBA")
+        image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
+        pixmap = QPixmap.fromImage(image)
         #pixmap = QPixmap(path)
-
-        # get original image dimensions
-        img_width = pixmap.width()
-        img_height = pixmap.height()
-        """
-        # scale the image properly so it fits into the image window ()
-        margin = 20
-        if img_width >= img_height:
-            pixmap = pixmap.scaledToWidth(self.img_panel_width - margin)
-
-        else:
-            pixmap = pixmap.scaledToHeight(self.img_panel_height - margin)
-        """
 
         self.image_box.setPixmap(pixmap)
         self.image_box.adjustSize()
-
 
         zoom_out_iter = 0 # for avoiding infinite loops
 
@@ -826,7 +819,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
 if __name__ == '__main__':
     # run the application
-    app = QApplication(sys.argv)
-    ex = SetupWindow()
-    ex.show()
-    sys.exit(app.exec_())
+    try:
+        app
+    except:
+        app = QApplication(sys.argv)
+        ex = SetupWindow()
+        ex.show()
+        sys.exit(app.exec_())
+
