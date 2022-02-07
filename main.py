@@ -311,6 +311,19 @@ class SetupWindow(QWidget):
 
 
 class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
+
+    # When scroll is used together with CTRL (command on Mac) zoom image instead of scrolling the image
+    #https://stackoverflow.com/questions/69056259/how-to-prevent-scrolling-while-ctrl-is-pressed-in-pyqt5
+    def eventFilter(self, source, event):
+        if event.type() == event.Wheel and event.modifiers() & Qt.ControlModifier:
+            x = event.angleDelta().y() / 120
+            if x > 0:
+                self.wheel_in()
+            elif x < 0:
+                self.wheel_out()
+            return True
+        return super().eventFilter(source, event)
+
     def __init__(self, labels, input_folder, mode):
         super().__init__()
 
@@ -345,9 +358,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.image_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image_box.setScaledContents(True)
 
+
         self.img_scroll_area = QScrollArea(self) # for image resizing
         self.img_scroll_area.setObjectName('image_panel')
         self.img_scroll_area.setWidget(self.image_box)
+        self.img_scroll_area.viewport().installEventFilter(self) # CTRL + mouse wheel zoom in/out
 
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
@@ -697,11 +712,17 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             zoom_out_iter +=1
             if zoom_out_iter >= 20: break # max iteration cap for scaling
 
+    # zoom with key press
     def zoom_in(self):
         self.scale_image(1.25)
-
     def zoom_out(self):
         self.scale_image(0.8)
+
+    # zoom with mouse wheel
+    def wheel_in(self):
+        self.scale_image(1.05)
+    def wheel_out(self):
+        self.scale_image(0.95)
 
     def scale_image(self, factor):
         """scale the image container size with given factor"""
