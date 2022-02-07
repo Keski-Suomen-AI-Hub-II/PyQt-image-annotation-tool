@@ -367,6 +367,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.img_name_label = QLabel(self)
         self.progress_bar = QLabel(self)
         self.curr_image_headline = QLabel('Current image:', self)
+        self.labeled_percentage = QLabel(self)
         #self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
@@ -401,14 +402,16 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         #self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image headline
-        self.curr_image_headline.setGeometry(20, 10, 300, 110)
+        self.curr_image_headline.setGeometry(20, 2, 300, 110)
         self.curr_image_headline.setObjectName('headline')
 
         # image name label
-        self.img_name_label.setGeometry(120, 10, self.img_panel_width, 110)
+        self.img_name_label.setGeometry(125, 2, self.img_panel_width, 110)
 
         # progress bar (how many images have I labeled so far)
-        self.progress_bar.setGeometry(20, 80, self.img_panel_width, 20)
+        self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
+
+        self.labeled_percentage.setGeometry(20, 85, self.img_panel_width, 20)
 
         # csv note
         #self.csv_note.setGeometry(self.img_panel_width + 20, 640, 400, 20)
@@ -431,11 +434,14 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.img_name_label.setText(filename)
 
         # progress bar
-        self.progress_bar.setText(f'image 1 of {self.num_images}')
+        self.progress_bar.setText(f'Image 1 of {self.num_images}')
+
+        # labeled %
+        self.update_progress()
 
         # draw line to for better UX
         ui_line = QLabel(self)
-        ui_line.setGeometry(20, 105, 1012, 1)
+        ui_line.setGeometry(20, 110, 1012, 1)
         ui_line.setStyleSheet('background-color: black')
         
         # apply custom styles
@@ -445,6 +451,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 self.setStyleSheet(fh.read())
         except:
             print("Can't load custom stylesheet.")
+
+    def update_progress(self):
+        self.labeled_percentage.setText(f'Labeled: {100 * len(self.assigned_labels) / self.num_images}%')
 
     def init_buttons(self):
 
@@ -492,7 +501,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 x_shift += 120
                 y_shift = 0
 
-            button.move(self.img_panel_width + 20 + x_shift, y_shift + 120)
+            button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
 
         """
         # add button for opening the current image with matplotlib
@@ -617,6 +626,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 shutil.copy(img_path, copy_to)
             elif self.mode == 'move':
                 shutil.move(img_path, copy_to)
+
+        # update labeled % progress
+        self.update_progress()
 
         # load next image
         if self.show_next_checkbox.isChecked():
