@@ -41,6 +41,9 @@ label(s) to these images.
 - N: Next image
 - P: Previous image
 - 1-9: Select label
+- Ctrl and -: Zoom out
+- Ctrl and +: Zoom in
+- Ctrl and mouse wheel: Zoom in/out
 
 ## Contributing
 
