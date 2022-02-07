@@ -452,8 +452,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         except:
             print("Can't load custom stylesheet.")
 
+    # update labeled out of total images percentage
     def update_progress(self):
-        self.labeled_percentage.setText(f'Labeled: {100 * len(self.assigned_labels) / self.num_images}%')
+        self.labeled_percentage.setText(f'Labeled: {round(100 * (len(self.assigned_labels) / self.num_images), 2)}%')
 
     def init_buttons(self):
 
