@@ -1,6 +1,5 @@
 import csv
 import os
-from re import X
 import shutil
 import sys
 
@@ -10,29 +9,22 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout, QSizePolicy, QAction, QMenu, QMainWindow
-from xlsxwriter.workbook import Workbook
+
 from PIL import Image
 from pydicom import dcmread
-import matplotlib.pyplot as plt
 
-def get_img_paths(dir, extensions=('.dcm', '')):
+def get_img_paths(dir, extensions=('.png', 'jpg', '.jpeg', 'dcm')):
     '''
     :param dir: folder with files
-    :param extensions: tuple with file endings. e.g. ('.dcm', ''). Files with these endings will be added to img_paths
+    :param extensions: tuple with file endings. e.g. ('.png', 'jpg'). Files with these endings will be added to img_paths
     :return: list of all filenames
     '''
-
     img_paths = []
     for filename in os.listdir(dir):
+
         if filename.lower().endswith(extensions):
             current_file = os.path.join(dir, filename)
-            try:
-                ds = dcmread(current_file)
-                img_paths.append(current_file)
-            except:
-                # not dcm ignore
-                print('file is not dcm')
-
+            img_paths.append(current_file)
     return img_paths
 
 
@@ -312,18 +304,6 @@ class SetupWindow(QWidget):
 
 class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
-    # When scroll is used together with CTRL (command on Mac) zoom image instead of scrolling the image
-    #https://stackoverflow.com/questions/69056259/how-to-prevent-scrolling-while-ctrl-is-pressed-in-pyqt5
-    def eventFilter(self, source, event):
-        if event.type() == event.Wheel and event.modifiers() & Qt.ControlModifier:
-            x = event.angleDelta().y() / 120
-            if x > 0:
-                self.wheel_in()
-            elif x < 0:
-                self.wheel_out()
-            return True
-        return super().eventFilter(source, event)
-
     def __init__(self, labels, input_folder, mode):
         super().__init__()
 
@@ -371,7 +351,6 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         #self.csv_note = QLabel('(csv will be also generated automatically after closing the app)', self)
         self.csv_generated_message = QLabel(self)
         self.show_next_checkbox = QCheckBox("Automatically show next image when labeled", self)
-        #self.generate_xlsx_checkbox = QCheckBox("Also generate .xlsx file", self)
 
         # for zoom in/out  
         self.create_actions()
@@ -396,10 +375,6 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         # create 'show next automatically' checkbox
         self.show_next_checkbox.setChecked(False)
         self.show_next_checkbox.setGeometry(self.img_panel_width + 25, 5, 400, 100)
-
-        # "create xlsx" checkbox
-        #self.generate_xlsx_checkbox.setChecked(False)
-        #self.generate_xlsx_checkbox.setGeometry(self.img_panel_width + 140, 606, 300, 20)
 
         # image headline
         self.curr_image_headline.setGeometry(20, 2, 300, 110)
@@ -505,18 +480,18 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
             button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
 
-        """
-        # add button for opening the current image with matplotlib
-        open_img_btn = QtWidgets.QPushButton("Open with mpl", self)
-        open_img_btn.move(self.img_panel_width - 150, next_prev_top_margin - 30)
-        open_img_btn.clicked.connect(self.open_img_mp)
-
-        # add button for opening the current image with the defaul viewer
-        open_img_btn2 = QtWidgets.QPushButton("Open with viewer", self)
-        open_img_btn2.move(self.img_panel_width - 150, next_prev_top_margin)
-        open_img_btn2.clicked.connect(self.open_img_def)
-        """
-
+    # When scroll is used together with CTRL (command on Mac) zoom image instead of scrolling the image
+    #https://stackoverflow.com/questions/69056259/how-to-prevent-scrolling-while-ctrl-is-pressed-in-pyqt5
+    def eventFilter(self, source, event):
+        if event.type() == event.Wheel and event.modifiers() & Qt.ControlModifier:
+            x = event.angleDelta().y() / 120
+            if x > 0:
+                self.wheel_in()
+            elif x < 0:
+                self.wheel_out()
+            return True
+        return super().eventFilter(source, event)
+    
     def create_actions(self):
         """Zoom in and out actions"""
         self.zoom_in_action = QAction("Zoom &In (25%)", self, shortcut="Ctrl++", enabled=True, triggered=self.zoom_in)
@@ -536,26 +511,6 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         scaled = (np.maximum(img, 0) / img.max()) * 255.0
         scaled = np.uint8(scaled)
         return scaled
-
-    def open_img_mp(self):
-        """Open current image with matplotlib"""
-        path = self.img_paths[self.counter]
-
-        # read and scale dicom image
-        img = self.scale_dicom(path)
-
-        plt.imshow(img, cmap='gray')
-        plt.axis('off')
-        plt.show()
-
-    def open_img_def(self):
-        """Open current image with a defaul viewer"""
-        path = self.img_paths[self.counter]
-        # read and scale dicom image from path
-        img = self.scale_dicom(path)
-        # convert to PIL image
-        img = Image.fromarray(img)
-        img.show()
 
     def set_label(self, label):
         """
@@ -699,21 +654,23 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         :param path: relative path to the image that should be show
         """
         
-        #if (path.split('.')[-1].lower() != 'dcm'): # file is not DICOM -> create a pixmap from file
-        #    pixmap = QPixmap(path)
-        
-        # read and scale dicom image
-        img = self.scale_dicom(path)
-        # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
-        img = Image.fromarray(img)
-        # convert to pixmap
-        # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
-        img = img.convert("RGBA")
-        data = img.tobytes("raw","RGBA")
-        image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
-        pixmap = QPixmap.fromImage(image)
-        #pixmap = QPixmap(path)
+        # image is DICOM convert to pixmap
+        if path.lower().endswith('.dcm'):
+            # read and scale dicom image
+            img = self.scale_dicom(path)
+            # convert to PIL image (workaround since converting a numpy array to pixmap is complex)
+            img = Image.fromarray(img)
+            # convert to pixmap
+            # https://stackoverflow.com/questions/34697559/pil-image-to-qpixmap-conversion-issue
+            img = img.convert("RGBA")
+            data = img.tobytes("raw","RGBA")
+            image = QImage(data, img.size[0], img.size[1], QImage.Format_ARGB32)
+            pixmap = QPixmap.fromImage(image)
 
+        # image is not DICOM, create pixmap normally
+        else:
+            pixmap = QPixmap(path)
+        
         self.image_box.setPixmap(pixmap)
         self.image_box.adjustSize()
 
@@ -781,30 +738,6 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
         print(message)
-
-        """
-        if self.generate_xlsx_checkbox.isChecked():
-            try:
-                self.csv_to_xlsx(csv_file_path)
-            except:
-                print('Generating xlsx file failed.')
-        """
-
-    def csv_to_xlsx(self, csv_file_path):
-        """
-        converts csv file to xlsx file
-        :param csv_file_path: path to csv file which we want to convert to lsx
-        """
-        workbook = Workbook(csv_file_path[:-4] + '.xlsx')
-        worksheet = workbook.add_worksheet()
-
-        with open(csv_file_path, 'rt', encoding='utf8') as f:
-            reader = csv.reader(f)
-            for r, row in enumerate(reader):
-                for c, col in enumerate(row):
-                    worksheet.write(r, c, col)
-
-        workbook.close()
 
     def set_button_color(self, filename):
         """
