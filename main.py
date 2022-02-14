@@ -698,16 +698,20 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
     def scale_image(self, factor):
         """scale the image container size with given factor"""
         self.scale_factor *= factor
+
+        # disable zoom in or out if the scale factor is too large or small
+        # otherwise the program might crash
+        if self.scale_factor > 3.0:
+            self.scale_factor = 3.0
+            return
+        if self.scale_factor < 0.1:
+            self.scale_factor = 0.1
+            return
         self.image_box.resize(self.scale_factor * self.image_box.pixmap().size())
 
         # adjust the scroll bar accordingly as the the image is scaled up or down
         self.adjust_scroll_bar(self.img_scroll_area.horizontalScrollBar(), factor)
         self.adjust_scroll_bar(self.img_scroll_area.verticalScrollBar(), factor)
-
-        # disable zoom in or out if the scale factor is too large or small
-        # otherwise the program might crash
-        self.zoom_in_action.setEnabled(self.scale_factor < 5.0)
-        self.zoom_out_action.setEnabled(self.scale_factor > 0.1)
 
     def adjust_scroll_bar(self, scroll_bar, factor):
         """Adjust the scroll bars so that when zooming in focus remains at the center of the image"""
