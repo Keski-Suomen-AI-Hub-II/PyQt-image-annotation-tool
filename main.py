@@ -46,7 +46,7 @@ class SetupWindow(QWidget):
         self.height = 940
 
         # State variables
-        self.selected_folder = './img' # for saving time
+        self.selected_folder = '/n/work02/salaalui/OA_data' # for saving time
         self.selected_labels = ''
         self.num_labels = 0
         self.label_inputs = []
@@ -198,7 +198,7 @@ class SetupWindow(QWidget):
         shows a dialog to choose folder with images to label
         """
         dialog = QFileDialog()
-        folder_path = dialog.getExistingDirectory(None, "Select Folder")
+        folder_path = dialog.getExistingDirectory(None, "Select Folder", '/n/work02/salaalui/OA_data') # specifies starting directory for the dialog
 
         self.selected_folder_label.setText(folder_path)
         self.selected_folder = folder_path

@@ -11,7 +11,7 @@ QPushButton#blueButton {
     color: white;
     border: none;
     padding: 8px 12px;
-    min-width: 80px;
+    min-width: 100px;
 }
 
 QPushButton#blueButton:hover {
