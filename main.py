@@ -476,8 +476,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             label_kbs.activated.connect(lambda x=label: self.set_label(x))
 
             # place button in GUI (create multiple columns if there is more than 10 button)
-            y_shift = (30 + 10) * (i % 10)
-            if (i != 0 and i % 10 == 0):
+            # temporary set max items per column = 3
+            y_shift = (30 + 10) * (i % 3)
+            if (i != 0 and i % 3 == 0):
                 x_shift += 120
                 y_shift = 0
 
@@ -558,10 +559,17 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
             # label is not there yet. But the image has some labels already
             else:
-                # remove other labels
-                #for l in self.assigned_labels[img_name]:
-                #    if l != label:
-                #        self.assigned_labels[img_name].remove(l)
+                # handle mutually exclusive classess
+                # iterate over currently assigned labels
+                for l in self.assigned_labels[img_name]:
+                    # it the label is not the clicked label AND it starts with the same characters as the clicked label --> remove it
+                    # hacky way to enable mutually exclusive annotation of multiple objects in a same image with a prefix
+                    # e.g. is there dogs or cats in a image
+                    #   classess:
+                    #   [dog] yes XOR [dog] no 
+                    #   [cat] yes XOR [cat] no
+                    if l != label and l.startswith(label[0:4]):
+                        self.assigned_labels[img_name].remove(l)
 
                 # add selected label
                 self.assigned_labels[img_name].append(label)
