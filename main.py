@@ -151,7 +151,8 @@ class SetupWindow(QWidget):
             print("Can't load custom stylesheet.")
 
         # preloads input fields with predefined labels
-        labels = ['Spiking', 'No spiking', 'Unsure']
+        labels = ['Med. spiking', 'Med. no spiking', 'Med. unsure',
+                  'Lat. spiking', 'Lat. no spiking', 'Lat. unsure']
         print(labels)
         self.numLabelsInput.setText(str(len(labels)))
         self.generate_label_inputs()
@@ -463,6 +464,8 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             self.label_buttons.append(QtWidgets.QPushButton(label, self))
             button = self.label_buttons[i]
 
+            button.setObjectName("labelButton")
+
             # create click event (set label)
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
             button.clicked.connect(lambda state, x=label: self.set_label(x))
@@ -517,6 +520,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         Sets the label for just loaded image
         :param label: selected label
         """
+        
+        # pre label handling logging
+        print('--- Selecting a new label ---')
+        print('selected label:', label)
+        print('image labels before:', self.assigned_labels)
 
         # get image filename from path (./data/images/img1.jpg → img1.jpg)
         img_path = self.img_paths[self.counter]
@@ -551,9 +559,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             # label is not there yet. But the image has some labels already
             else:
                 # remove other labels
-                for l in self.assigned_labels[img_name]:
-                    if l != label:
-                        self.assigned_labels[img_name].remove(l)
+                #for l in self.assigned_labels[img_name]:
+                #    if l != label:
+                #        self.assigned_labels[img_name].remove(l)
 
                 # add selected label
                 self.assigned_labels[img_name].append(label)
@@ -592,6 +600,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             self.show_next_image()
         else:
             self.set_button_color(img_name)
+
+        # logging after handling the labels
+        print('image labels after:', self.assigned_labels)
 
     def show_next_image(self):
         """
