@@ -283,6 +283,12 @@ class SetupWindow(QWidget):
             if label.text().strip() == '':
                 return False, 'All label fields has to be filled (step 4).'
 
+        # check that dir with images was selected
+        check_images = get_img_paths(self.selected_folder)
+        if len(check_images) == 0:
+            return False, 'Directory with 0 images was selected'
+
+
         return True, 'Form ok'
 
     def continue_app(self):
