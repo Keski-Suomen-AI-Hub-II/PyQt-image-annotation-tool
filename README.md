@@ -1,20 +1,19 @@
 # PyQt Image Annotation Tool
 
-This app is used to label images in a given directory.
-Labeled images can be moved or copied into sub-directories, which are named as assigned labels.
-The app is just a single Python script with GUI.
+A simple image annotation tool based on Python and PyQt.
 
-![PyQt Image Annotation Tool GUI](https://i.stack.imgur.com/iihhf.png)
+This script is a fork of https://github.com/robertbrada/PyQt-image-annotation-tool
 
-## What can this app do
-For example you have folder ./data/images/ with a lot of images and you need to assign some
-label(s) to these images.
+![Annotation Tool GUI](Examples/screenshot1.png)
 
-- it can assign multiple labels to one image
-- it allows you to choose number and names of your labels
-- it can move/copy images to folders that are named as desired labels.
-- it can generate .csv file with assigned labels.
-- all settings are handled via GUI
+## Features
+
+- Cross-platform support
+- Multilabel annotation
+- Supports png, jpg, jpeg, and dcm (DICOM) image formats
+- Built-in zoom feature
+- Hotkeys
+- CSV generation
 
 ## Installation and usage
 
@@ -45,6 +44,3 @@ label(s) to these images.
 - Ctrl and +: Zoom in
 - Ctrl and mouse wheel: Zoom in/out
 
-## Contributing
-
-Pull requests are welcomed.
