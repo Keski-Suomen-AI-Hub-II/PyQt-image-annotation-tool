@@ -151,9 +151,10 @@ class SetupWindow(QWidget):
             print("Can't load custom stylesheet.")
 
         # preloads input fields with predefined labels
-        labels = ['Med. spiking', 'Med. no spiking', 'Med. unsure',
-                  'Lat. spiking', 'Lat. no spiking', 'Lat. unsure']
+        labels = ['Lat. spiking', 'Lat. no spiking', 'Lat. unsure',
+                  'Med. spiking', 'Med. no spiking', 'Med. unsure']
         print(labels)
+        
         self.numLabelsInput.setText(str(len(labels)))
         self.generate_label_inputs()
 
