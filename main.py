@@ -155,7 +155,7 @@ class SetupWindow(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "Select labels", "",
                                                   "Text files (*.txt)", options=options)
         if fileName:
-            with open(fileName) as f:
+            with open(fileName,encoding="utf-8") as f:
                 content = f.readlines()
 
             labels = [line.rstrip('\n') for line in content]
@@ -402,7 +402,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         # Create button for each label
         x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         for i, label in enumerate(self.labels):
-            self.label_buttons.append(QtWidgets.QPushButton(label, self))
+            self.label_buttons.append(QtWidgets.QCheckBox(label, self))
             button = self.label_buttons[i]
 
             button.setObjectName("labelButton")
@@ -494,6 +494,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # update labeled % progress
         self.update_labeled_progress()
+
+        # reset checkboxes
+        # for i in 
 
         # load next image
         if self.show_next_checkbox.isChecked():
@@ -659,7 +662,8 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             if button.text() in assigned_labels:
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
             else:
-                button.setStyleSheet('background-color: None')
+                button.setStyleSheet('background-color: Red')
+                button.setChecked(False)
 
     def closeEvent(self, event):
         """
