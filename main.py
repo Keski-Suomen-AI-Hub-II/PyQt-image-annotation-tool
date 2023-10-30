@@ -415,7 +415,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             # shortcuts start getting overwritten when number of labels >9
             label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
             label_kbs.activated.connect(lambda x=label: self.set_label(x))
-
+            
             # place button in GUI (create multiple columns if there is more than 10 button)
             y_shift = (30 + 10) * (i % 10)
             if (i != 0 and i % 10 == 0):
@@ -661,8 +661,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         for button in self.label_buttons:
             if button.text() in assigned_labels:
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
+                button.setChecked(True)
             else:
-                button.setStyleSheet('background-color: Red')
+                button.setStyleSheet('background-color: None')
                 button.setChecked(False)
 
     def closeEvent(self, event):
