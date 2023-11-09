@@ -159,6 +159,9 @@ class SetupWindow(QWidget):
                 content = f.readlines()
 
             labels = [line.rstrip('\n') for line in content]
+            labellength = len(labels) # Local copy of variable as following loop will append onto existing list
+            for i in range(0,labellength):
+                labels.append(labels[i]+"_epaselva")
 
             print(labels)
             self.numLabelsInput.setText(str(len(labels)))
@@ -283,6 +286,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # initialize list to save all label buttons
         self.label_buttons = []
+        self.secondary_buttons = [] # List for secondary buttons next to primary buttons
 
         # Initialize Labels
         self.image_box = QLabel(self)
@@ -401,11 +405,22 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # Create button for each label
         x_shift = 0  # variable that helps to compute x-coordinate of button in UI
-        for i, label in enumerate(self.labels):
+        
+
+        labels_end = int(len(self.labels)/2)
+        primary_labels = self.labels[0:labels_end]
+        secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
+
+        for i, label in enumerate(primary_labels):
+            # Create button group to toggle between radiobuttons
+            #painikejoukko = QtWidgets.QButtonGroup()
+
             self.label_buttons.append(QtWidgets.QCheckBox(label, self))
             button = self.label_buttons[i]
 
             button.setObjectName("labelButton")
+            #painikejoukko.addButton(button)
+
 
             # create click event (set label)
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
@@ -423,6 +438,27 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 y_shift = 0
 
             button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
+            
+            # Create second button for unsure tag
+            self.secondary_buttons.append(QtWidgets.QCheckBox("e", self))
+
+            button2 = self.secondary_buttons[i] # ongelma on tässä, täytyy luoda silmukan jälkeen tai keksiä toinen lista sivuun
+            button2.setObjectName("labelUnsureButton")
+            #painikejoukko.addButton(button2)
+            button2.clicked.connect(lambda state, x=(label+"_epaselva"): self.set_label(x)) # TODO Nyt asettaa vain normaalin labelin, vaihda (epäselvä) tai vastaava
+            # TODO clicked-tapahtuma myös yhteinen, rastii molemmat boksit, täytyy korjata
+            # label täytyy olla kuitenkin olemassa labels-taulukossa, jotta voi kirjata (muuten KeyError)
+            # joko lisää epäselvät labeleihin, tai muuta taulukointifunktiota
+            #secondary_labels.append(label+"_epaselva")
+
+
+            button2.move(self.img_panel_width + 130 + x_shift, y_shift + 120)
+
+
+        # Append created secondary labels afterwards to prevent infinite looping
+        #for seclab in secondary_labels:
+        #    self.labels.append(seclab)
+
 
     # When scroll is used together with CTRL (command on Mac) zoom image instead of scrolling the image
     #https://stackoverflow.com/questions/69056259/how-to-prevent-scrolling-while-ctrl-is-pressed-in-pyqt5
@@ -493,10 +529,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
 
         # update labeled % progress
-        self.update_labeled_progress()
-
-        # reset checkboxes
-        # for i in 
+        self.update_labeled_progress() 
 
         # load next image
         if self.show_next_checkbox.isChecked():
