@@ -440,12 +440,16 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
             
             # Create second button for unsure tag
-            self.secondary_buttons.append(QtWidgets.QCheckBox("e", self))
+            self.secondary_buttons.append(QtWidgets.QCheckBox(label+"_epaselva", self))
 
-            button2 = self.secondary_buttons[i] # ongelma on tässä, täytyy luoda silmukan jälkeen tai keksiä toinen lista sivuun
+            button2 = self.secondary_buttons[i] # 
             button2.setObjectName("labelUnsureButton")
             #painikejoukko.addButton(button2)
-            button2.clicked.connect(lambda state, x=(label+"_epaselva"): self.set_label(x)) # TODO Nyt asettaa vain normaalin labelin, vaihda (epäselvä) tai vastaava
+            button2.clicked.connect(lambda state, x=secondary_labels[i]: self.set_label(x)) #            
+            label_kbs = QShortcut(QKeySequence("CTRL+"f"{i+1 % 10}"), self)
+            label_kbs.activated.connect(lambda x=secondary_labels[i]: self.set_label(x))
+
+
             # TODO clicked-tapahtuma myös yhteinen, rastii molemmat boksit, täytyy korjata
             # label täytyy olla kuitenkin olemassa labels-taulukossa, jotta voi kirjata (muuten KeyError)
             # joko lisää epäselvät labeleihin, tai muuta taulukointifunktiota
@@ -690,9 +694,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             assigned_labels = self.assigned_labels[filename]
         else:
             assigned_labels = []
-
-        for button in self.label_buttons:
-            if button.text() in assigned_labels:
+        combined_buttons = self.label_buttons+self.secondary_buttons
+        for button in combined_buttons:
+            if (button.text() in assigned_labels):
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
                 button.setChecked(True)
             else:
