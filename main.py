@@ -2,10 +2,11 @@ import csv
 import os
 import shutil
 import sys
+import re
 
 import numpy as np
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRegularExpression
 from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout, QSizePolicy, QAction, QMenu, QMainWindow
@@ -287,6 +288,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         # initialize list to save all label buttons
         self.label_buttons = []
         self.secondary_buttons = [] # List for secondary buttons next to primary buttons
+        self.tertiary_buttons = [] # List for negation buttons
 
         # Initialize Labels
         self.image_box = QLabel(self)
@@ -410,17 +412,17 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         labels_end = int(len(self.labels)/2)
         primary_labels = self.labels[0:labels_end]
         secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
+        button_groups = []
+
 
         for i, label in enumerate(primary_labels):
-            # Create button group to toggle between radiobuttons
-            #painikejoukko = QtWidgets.QButtonGroup()
+            
 
-            self.label_buttons.append(QtWidgets.QCheckBox(label, self))
+            self.label_buttons.append(QtWidgets.QRadioButton(label, self))
             button = self.label_buttons[i]
 
-            button.setObjectName("labelButton")
-            #painikejoukko.addButton(button)
-
+            button.setObjectName("labelButton_"+label)
+                        
 
             # create click event (set label)
             # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
@@ -440,10 +442,10 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
             
             # Create second button for unsure tag
-            self.secondary_buttons.append(QtWidgets.QCheckBox(label+"_epaselva", self))
+            self.secondary_buttons.append(QtWidgets.QRadioButton(label+"_epaselva", self))
 
             button2 = self.secondary_buttons[i] # 
-            button2.setObjectName("labelUnsureButton")
+            button2.setObjectName("labelButtonUnsure_"+label)
             #painikejoukko.addButton(button2)
             button2.clicked.connect(lambda state, x=secondary_labels[i]: self.set_label(x)) #            
             label_kbs = QShortcut(QKeySequence("CTRL+"f"{i+1 % 10}"), self)
@@ -457,6 +459,33 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
 
             button2.move(self.img_panel_width + 130 + x_shift, y_shift + 120)
+            
+            self.tertiary_buttons.append(QtWidgets.QRadioButton(label[:3]+"_ei", self))
+
+            button3 = self.tertiary_buttons[i] #
+            button3.setObjectName("labelButtonNone_"+label)
+            # No functionalities are added to the None-button, as the radio nature automatically
+            
+            
+            # wipes past labels on exit
+            button3.clicked.connect(lambda state, x=label+"_tyhj": self.set_label(x))
+
+
+            button3.move(self.img_panel_width + 235 + x_shift, y_shift + 120)
+
+
+
+            # Create button group to toggle between radiobuttons
+            painikejoukko = QtWidgets.QButtonGroup(self) 
+            
+            painikejoukko.addButton(button)
+            painikejoukko.addButton(button2)
+            painikejoukko.addButton(button3)
+            painikejoukko.setExclusive(True)
+            painikejoukko.setObjectName("buttonGroup"+label)
+            
+            #print(painikejoukko.buttons())
+            #button_groups.append(painikejoukko)
 
 
         # Append created secondary labels afterwards to prevent infinite looping
@@ -524,13 +553,30 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
             # label is not there yet. But the image has some labels already
             else:
+                # Clear other labels from the same group
+                # start with shortening label to identify buttons by group
+                if re.compile(".*_").match(label):
+                    matcher = re.compile(".*_").match(label)[0][0:-1]
+                else:
+                    matcher = label
+                # Form regex from label of current button
+                groupReg = QRegularExpression("_"+matcher, QRegularExpression.CaseInsensitiveOption)
+                print("Created regex "+groupReg.pattern())
+                # Find relevant buttons in group according to label-regex
+                current_group = self.findChildren(QRadioButton, groupReg)
+                print(current_group)
+                for label_button in current_group:
+                    print("Evaluating "+label_button.text())
+                    if self.assigned_labels[img_name].count(label_button.text()) > 0:
+                        print("Removing "+label_button.text())
+                        self.assigned_labels[img_name].remove(label_button.text())
                 # add selected label
-                self.assigned_labels[img_name].append(label)
+                if("_tyhj" not in label):
+                    self.assigned_labels[img_name].append(label)
 
         else:
-            # Image has no labels yet. Set new label
+           # Image has no labels yet. Set new label
             self.assigned_labels[img_name] = [label]
-
 
         # update labeled % progress
         self.update_labeled_progress() 
@@ -695,6 +741,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         else:
             assigned_labels = []
         combined_buttons = self.label_buttons+self.secondary_buttons
+        # TODO consider an if-statement to fix radiobutton-checkboxing
+        # regex-match relevant children (label of current button) in buttons
+        
         for button in combined_buttons:
             if (button.text() in assigned_labels):
                 button.setStyleSheet('border: 1px solid #43A047; background-color: #4CAF50; color: white')
@@ -702,6 +751,10 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             else:
                 button.setStyleSheet('background-color: None')
                 button.setChecked(False)
+                # TODO labelit täytyy myös tyhjentää tässä
+                #  if label in self.assigned_labels[img_name]:
+                #   self.assigned_labels[img_name].remove(label)
+
 
     def closeEvent(self, event):
         """
