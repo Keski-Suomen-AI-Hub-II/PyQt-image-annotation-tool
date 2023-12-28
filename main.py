@@ -614,6 +614,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.adjust_scroll_bar(self.img_scroll_area.horizontalScrollBar(), factor)
         self.adjust_scroll_bar(self.img_scroll_area.verticalScrollBar(), factor)
 
+
     def adjust_scroll_bar(self, scroll_bar, factor):
         """Adjust the scroll bars so that when zooming in focus remains at the center of the image"""
         scroll_bar.setValue(int(factor * scroll_bar.value()
@@ -702,3 +703,29 @@ if __name__ == '__main__':
         ex.show()
         sys.exit(app.exec_())
 
+class PaintableLabel(QLabel):
+    # As QLabel inherits from QWidget, we can access the position
+    # and size from the superclass, making drawing in relation to 
+    # the image very easy
+
+    # event: QMouseEvent
+    def mousePressEvent(self, event):
+        # forward event.x and event.y into draw function
+        # mouseEvent pos is given relative to widget, so imagebox
+        if((self.image_box.size.width-30 > event.x > 30) and (self.image_box.size.height-30 > event.y >30)):
+            painter = QPainter(self)
+            painter.setPen(Qt.red)
+            
+            painter.fillRect(event.x-15, event.y-15, 30, 30, Qt.red)
+
+            painter.end()
+
+        # check that projected draw is within image boundaries
+        # if true, draw box and save relative coordinates within image
+        # remember to check for potential premade scaling
+        # event should also forward relative coordinates to main program
+        # (or have original dimensions as parameter?)
+        #
+        # In addition, since self is passed, this allows access to internal variables
+        # of the parent, so relative coordinates can easily be passed onto
+        # variables within the parent
