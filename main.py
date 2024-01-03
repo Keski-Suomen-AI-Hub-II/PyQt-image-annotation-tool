@@ -6,7 +6,7 @@ import sys
 import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence
+from PyQt5.QtGui import QPixmap, QImage, QIntValidator, QKeySequence, QPainter
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QCheckBox, QFileDialog, QDesktopWidget, QLineEdit, \
     QRadioButton, QShortcut, QScrollArea, QVBoxLayout, QGroupBox, QFormLayout, QSizePolicy, QAction, QMenu, QMainWindow
 
@@ -36,6 +36,50 @@ def make_folder(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+
+class PaintableLabel(QLabel):
+    xPos = 0
+    yPos = 0
+
+    def mousePressEvent(self, event):
+        self.xPos = event.x()
+        self.yPos = event.y()
+
+        print("set pos to "+str(self.xPos))
+
+        self.update()
+    
+    # As QLabel inherits from QWidget, we can access the position
+    # and size from the superclass, making drawing in relation to 
+    # the image very easy
+    # event: QMouseEvent
+    def paintEvent(self, event):
+        print("pos is "+str(self.xPos)+" "+str(self.yPos))
+        # forward event.x and event.y into draw function
+        # mouseEvent pos is given relative to widget, so imagebox
+        #if((self.size().width()-30 > event.x() > 30) and (self.size().height()-30 > event.y() >30)):
+        super(PaintableLabel, self).paintEvent(event)
+        if(self.xPos > 30 or self.yPos > 30):
+            painter = QPainter()
+            painter.begin(self)
+            #painter.drawPixmap(0,0,self.pixmap())
+            painter.setPen(Qt.red)
+            # paintevents are called as part of updates, check behaviour, may have to extend label update()
+            painter.drawRect(self.xPos-15, self.yPos-15, 30, 30)
+        #self.update()
+            painter.end()
+
+
+
+        # check that projected draw is within image boundaries
+        # if true, draw box and save relative coordinates within image
+        # remember to check for potential premade scaling
+        # event should also forward relative coordinates to main program
+        # (or have original dimensions as parameter?)
+        #
+        # In addition, since self is passed, this allows access to internal variables
+        # of the parent, so relative coordinates can easily be passed onto
+        # variables within the parent
 
 class SetupWindow(QWidget):
     def __init__(self):
@@ -285,7 +329,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.label_buttons = []
 
         # Initialize Labels
-        self.image_box = QLabel(self)
+        self.image_box = PaintableLabel(self)
         self.image_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image_box.setScaledContents(True)
 
@@ -634,16 +678,23 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
-            writer.writerow(['img'] + self.labels)
+            writer.writerow(['img'] + self.labels + ["highlight xy"])
 
             # write one-hot labels
             for img_name, labels in self.assigned_labels.items():
                 labels_one_hot = self.labels_to_zero_one(labels)
-                writer.writerow([img_name] + list(labels_one_hot))
-
+                writer.writerow([img_name] + list(labels_one_hot)) #tähän lisänä koordinaatit, mahd. labels_one_hotiin. Toinen vaihtoehto aliohjelmakutsu, joka hakee image_boxin posX ja y:n
+# silmukka kirjoittaa aina uudelleen ja labels-taulun sisällön pohjalta
+# hae siis labels-tauluun kirjoittaminen ja muokkaa
         message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
         print(message)
+
+    def fetch_image_coords(self):
+        # imgbox = fetchChild("imagebox")
+        # return imgbox
+
+
 
     def set_button_color(self, filename):
         """
@@ -703,29 +754,3 @@ if __name__ == '__main__':
         ex.show()
         sys.exit(app.exec_())
 
-class PaintableLabel(QLabel):
-    # As QLabel inherits from QWidget, we can access the position
-    # and size from the superclass, making drawing in relation to 
-    # the image very easy
-
-    # event: QMouseEvent
-    def mousePressEvent(self, event):
-        # forward event.x and event.y into draw function
-        # mouseEvent pos is given relative to widget, so imagebox
-        if((self.image_box.size.width-30 > event.x > 30) and (self.image_box.size.height-30 > event.y >30)):
-            painter = QPainter(self)
-            painter.setPen(Qt.red)
-            
-            painter.fillRect(event.x-15, event.y-15, 30, 30, Qt.red)
-
-            painter.end()
-
-        # check that projected draw is within image boundaries
-        # if true, draw box and save relative coordinates within image
-        # remember to check for potential premade scaling
-        # event should also forward relative coordinates to main program
-        # (or have original dimensions as parameter?)
-        #
-        # In addition, since self is passed, this allows access to internal variables
-        # of the parent, so relative coordinates can easily be passed onto
-        # variables within the parent
