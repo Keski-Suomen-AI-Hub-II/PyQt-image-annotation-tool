@@ -40,6 +40,59 @@ def make_folder(directory):
 class PaintableLabel(QLabel):
     xPos = 0
     yPos = 0
+    # List for storing individual image coordinates
+    # As the UI operates on a simple next-previous order
+    # the list can be operated with push-pop
+    coordList = []
+    currentIndex = 0
+    
+    def resetPos(self):
+
+        self.xPos = 0
+        self.yPos = 0
+
+    def imgFwd(self):
+        if (len(self.coordList) <= self.parent().parent().parent().num_images):
+            self.currentIndex+=1
+            self.coordList.append((self.xPos, self.yPos))
+            self.resetPos()
+            print("saved coord "+str(self.coordList[-1]))
+        elif (self.currentIndex < len(self.coordList)-1):
+            self.coordList[self.currentIndex] = (self.xPos, self.yPos)
+            self.currentIndex+=1
+            coord = self.coordList[self.currentIndex]
+            self.xPos = coord[0]
+            self.yPos = coord[1]
+        else:
+            self.coordList[self.currentIndex] = (self.xPos, self.yPos)
+            print("end of")
+            #self.coordList.pop()
+            #self.coordList.append((self.xPos, self.yPos))
+            #print("saved coord "+str(self.coordList[-1]))
+            #print("Reached end")
+
+
+    def imgBack(self):
+        if self.currentIndex > 0:
+            if len(self.coordList) > self.currentIndex:
+                self.coordList[self.currentIndex] = (self.xPos, self.yPos)
+            self.currentIndex-=1
+            coord = self.coordList[self.currentIndex]
+            # consider popping from current point in list, updating value if necessary
+            # and then re-appending to same position
+            # How does the program know the current index?
+            self.xPos = coord[0]
+            self.yPos = coord[1]
+            print("restored coord "+str(self.xPos))
+            
+            #self.coordList.insert(currentIndex,coord)
+
+    def setPoses(self, x, y):
+        self.xPos = x
+        self.yPos = y
+
+    def getPoses():
+        return [self.xPos, self.yPos]
 
     def mousePressEvent(self, event):
         self.xPos = event.x()
@@ -572,6 +625,10 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             path = self.img_paths[self.counter]
             self.set_button_color(os.path.split(path)[-1])
 
+        # reset image box coordinates
+        imgBox = self.findChild(QScrollArea, 'image_panel').widget()
+        imgBox.imgFwd()
+
     def show_prev_image(self):
         """
         loads and shows previous image in dataset
@@ -592,6 +649,12 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
                 self.set_button_color(filename)
                 self.csv_generated_message.setText('')
+
+   
+        # reset image box coordinates
+        imgBox = self.findChild(QScrollArea, 'image_panel').widget()
+        imgBox.imgBack() 
+
 
     def set_image(self, path):
         """
@@ -689,8 +752,9 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
         print(message)
-
-    def fetch_image_coords(self):
+# image coords must be appended to one_hot table as otherwise it would be converted to binary
+# add call into end of labels_to_zero_one?
+    #def fetch_image_coords(self):
         # imgbox = fetchChild("imagebox")
         # return imgbox
 
