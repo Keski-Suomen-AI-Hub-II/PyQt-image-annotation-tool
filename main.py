@@ -383,6 +383,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # Initialize Labels
         self.image_box = PaintableLabel(self)
+
         self.image_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image_box.setScaledContents(True)
 
@@ -741,14 +742,29 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
-            writer.writerow(['img'] + self.labels + ["highlight xy"])
+            writer.writerow(['img'] + self.labels + ["highlight x"] + ["highlight y"])
+            
+
+            painter_index = 0
+            imgBox = self.findChild(QScrollArea, 'image_panel').widget()
+
 
             # write one-hot labels
             for img_name, labels in self.assigned_labels.items():
                 labels_one_hot = self.labels_to_zero_one(labels)
-                writer.writerow([img_name] + list(labels_one_hot)) #tähän lisänä koordinaatit, mahd. labels_one_hotiin. Toinen vaihtoehto aliohjelmakutsu, joka hakee image_boxin posX ja y:n
-# silmukka kirjoittaa aina uudelleen ja labels-taulun sisällön pohjalta
-# hae siis labels-tauluun kirjoittaminen ja muokkaa
+
+                try:
+                    painter_tuple = imgBox.coordList[painter_index]
+                except IndexError:
+                    print("oob")
+                    painter_tuple = (0,0)
+
+                writer.writerow([img_name] + list(labels_one_hot) + [painter_tuple[0], painter_tuple[1]]) 
+                #tähän lisänä koordinaatit, mahd. labels_one_hotiin. Toinen vaihtoehto aliohjelmakutsu, joka hakee image_boxin posX ja y:n
+                # silmukka kirjoittaa aina uudelleen ja labels-taulun sisällön pohjalta
+                # hae siis labels-tauluun kirjoittaminen ja muokkaa
+
+                painter_index+=1
         message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
         print(message)
