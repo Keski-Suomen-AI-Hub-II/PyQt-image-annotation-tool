@@ -715,7 +715,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         make_folder(path_to_save)
         csv_file_path = os.path.join(path_to_save, out_filename) + '.csv'
 
-        with open(csv_file_path, "w", newline='') as csv_file:
+        with open(csv_file_path, "w", newline='', encoding='utf-8') as csv_file:
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
