@@ -45,7 +45,8 @@ class PaintableLabel(QLabel):
     # the list can be operated with push-pop
     coordList = []
     currentIndex = 0
-    
+    RECT_SIDE_LENGTH = 50 # should always be an even number to prevent rounding errors
+
     def resetPos(self):
 
         self.xPos = 0
@@ -99,7 +100,7 @@ class PaintableLabel(QLabel):
         self.yPos = event.y()
 
         print("set pos to "+str(self.xPos))
-
+        print("abs size is "+ str(self.size().width()) + str(self.size().height()))
         self.update()
     
     # As QLabel inherits from QWidget, we can access the position
@@ -112,13 +113,13 @@ class PaintableLabel(QLabel):
         # mouseEvent pos is given relative to widget, so imagebox
         #if((self.size().width()-30 > event.x() > 30) and (self.size().height()-30 > event.y() >30)):
         super(PaintableLabel, self).paintEvent(event)
-        if(self.xPos > 30 or self.yPos > 30):
+        if(self.xPos > self.RECT_SIDE_LENGTH or self.yPos > self.RECT_SIDE_LENGTH):
             painter = QPainter()
             painter.begin(self)
             #painter.drawPixmap(0,0,self.pixmap())
             painter.setPen(Qt.red)
             # paintevents are called as part of updates, check behaviour, may have to extend label update()
-            painter.drawRect(self.xPos-15, self.yPos-15, 30, 30)
+            painter.drawRect(self.xPos-int(self.RECT_SIDE_LENGTH/2), self.yPos-int(self.RECT_SIDE_LENGTH/2), self.RECT_SIDE_LENGTH, self.RECT_SIDE_LENGTH)
         #self.update()
             painter.end()
 
@@ -252,7 +253,7 @@ class SetupWindow(QWidget):
         fileName, _ = QFileDialog.getOpenFileName(self, "Select labels", "",
                                                   "Text files (*.txt)", options=options)
         if fileName:
-            with open(fileName) as f:
+            with open(fileName, encoding='utf-8') as f:
                 content = f.readlines()
 
             labels = [line.rstrip('\n') for line in content]
@@ -742,7 +743,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             writer = csv.writer(csv_file, delimiter=',')
 
             # write header
-            writer.writerow(['img'] + self.labels + ["highlight x"] + ["highlight y"])
+            writer.writerow(['img'] + self.labels + ["highlight x"] + ["highlight y"] + ["side length"])
             
 
             painter_index = 0
@@ -758,12 +759,15 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 except IndexError:
                     print("oob")
                     painter_tuple = (0,0)
+                
+                relative_x = round(painter_tuple[0]/(imgBox.size().width()), 2)
+                relative_y = round(painter_tuple[1]/(imgBox.size().height()),2)
+                relative_SL =  round(imgBox.RECT_SIDE_LENGTH/(imgBox.size().width()),2)
 
-                writer.writerow([img_name] + list(labels_one_hot) + [painter_tuple[0], painter_tuple[1]]) 
-                #tähän lisänä koordinaatit, mahd. labels_one_hotiin. Toinen vaihtoehto aliohjelmakutsu, joka hakee image_boxin posX ja y:n
-                # silmukka kirjoittaa aina uudelleen ja labels-taulun sisällön pohjalta
-                # hae siis labels-tauluun kirjoittaminen ja muokkaa
-
+                writer.writerow([img_name] + list(labels_one_hot) + [relative_x, relative_y, imgBox.RECT_SIDE_LENGTH]) 
+                # TODO kuvakoordinaattien skaalaus, harkitse suhteellista sijaintia?em.45% leveys 30% kork
+                # vaihtoehto: ota vain kerroin ja kerro alkuperäisen kuvan koolla!
+                # self.size().width()) + str(self.size().height())
                 painter_index+=1
         message = f'csv saved to: {csv_file_path}'
         self.csv_generated_message.setText(message)
