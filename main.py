@@ -38,34 +38,46 @@ def make_folder(directory):
 
 
 class PaintableLabel(QLabel):
-    xPos = 0
-    yPos = 0
+    xPos = (0,0)
+    yPos = (0,0)
     # List for storing individual image coordinates
     # As the UI operates on a simple next-previous order
     # the list can be operated with push-pop
     coordList = []
     currentIndex = 0
-    RECT_SIDE_LENGTH = 50 # should always be an even number to prevent rounding errors
+    RECT_SIDE_LENGTH = 150 # should always be an even number to prevent rounding errors
+    EXPORT_FLAG = False
+    # add boolean flag to class to determine whether to export or not
+    def exportCroppedImage(self): # MUST BE WRITTEN INSIDE PAINTEVENT
+        current_image = self.pixmap().toImage()
+        smaller_image = QPixmap()
+        painter = QPainter(self)
+        painter.begin(smaller_image)
+        painter.drawImage(200, 200, current_image, int(self.xPos-(self.RECT_SIDE_LENGTH/2)), int(self.yPos-(self.RECT_SIDE_LENGTH/2)), int(self.RECT_SIDE_LENGTH), int(self.RECT_SIDE_LENGTH))
+        painter.end()
+        smaller_image.save("export.jpg", "JPG")
+        print("exported")
 
     def resetPos(self):
 
-        self.xPos = 0
-        self.yPos = 0
+        self.xPos = (0, self.size().width())
+        self.yPos = (0, self.size().height())
 
     def imgFwd(self):
         if (len(self.coordList) <= self.parent().parent().parent().num_images):
             self.currentIndex+=1
             self.coordList.append((self.xPos, self.yPos))
-            self.resetPos()
+            #self.resetPos()
             print("saved coord "+str(self.coordList[-1]))
         elif (self.currentIndex < len(self.coordList)-1):
             self.coordList[self.currentIndex] = (self.xPos, self.yPos)
             self.currentIndex+=1
             coord = self.coordList[self.currentIndex]
-            self.xPos = coord[0]
+            eelf.xPos = coord[0]
             self.yPos = coord[1]
         else:
-            self.coordList[self.currentIndex] = (self.xPos, self.yPos)
+            #self.coordList[self.currentIndex] = (self.xPos, self.yPos)
+            self.exportCroppedImage() 
             print("end of")
             #self.coordList.pop()
             #self.coordList.append((self.xPos, self.yPos))
@@ -89,39 +101,80 @@ class PaintableLabel(QLabel):
             #self.coordList.insert(currentIndex,coord)
 
     def setPoses(self, x, y):
-        self.xPos = x
-        self.yPos = y
+        self.xPos = (x, self.size().width())
+        self.yPos = (y, self.size().height())
 
     def getPoses():
         return [self.xPos, self.yPos]
 
     def mousePressEvent(self, event):
-        self.xPos = event.x()
-        self.yPos = event.y()
+        #self.xPos = event.x()
+        #self.yPos = event.y()
+
+        self.xPos = (event.x(), self.size().width())
+        self.yPos = (event.y(), self.size().height())
+        #
 
         print("set pos to "+str(self.xPos))
         print("abs size is "+ str(self.size().width()) + str(self.size().height()))
         self.update()
-    
+   
+    # x = (344, 566) y = (230, 332)
+    # conversion is xmax size * (344/566) and ymax*(230/332)
+
+
     # As QLabel inherits from QWidget, we can access the position
     # and size from the superclass, making drawing in relation to 
     # the image very easy
     # event: QMouseEvent
     def paintEvent(self, event):
-        print("pos is "+str(self.xPos)+" "+str(self.yPos))
+        if(self.EXPORT_FLAG): # TODO save() state (after superclass function) at start, then restore() once image is saved
+            
+            current_image = self.pixmap().toImage()
+            #smaller_image = QPixmap()
+            #painter = QPainter(self)
+            #painter.begin(smaller_image)
+            #painter.drawImage(200, 200, current_image, int(self.xPos-(self.RECT_SIDE_LENGTH/2)), int(self.yPos-(self.RECT_SIDE_LENGTH/2)), int(self.RECT_SIDE_LENGTH), int(self.RECT_SIDE_LENGTH))
+            #painter.end()
+            #smaller_image.save("export.jpg", "JPG") # What is saved and where? Does smaller_image not save because it's never instantiated? Something is being drawn
+            #cropped_image = current_image.copy(int(self.xPos-(self.RECT_SIDE_LENGTH/2)), int(self.yPos-(self.RECT_SIDE_LENGTH/2)), int(self.RECT_SIDE_LENGTH), int(self.RECT_SIDE_LENGTH))
+            relative_side_length = int((self.RECT_SIDE_LENGTH/self.xPos[1]) * current_image.size().width()) # should relative calculations use relative side length?
+            #relativeX = int((self.xPos[0]/self.xPos[1])*current_image.size().width()) - int(self.RECT_SIDE_LENGTH/2)
+            #relativeY = int((self.yPos[0]/self.yPos[1])*current_image.size().height()) - int(self.RECT_SIDE_LENGTH/2)
+            
+            relativeX = int((self.xPos[0]/self.xPos[1])*current_image.size().width()) - int(relative_side_length/2)
+            relativeY = int((self.yPos[0]/self.yPos[1])*current_image.size().height()) - int(relative_side_length/2)
+            
+
+            print("set xy as "+str(relativeX) +" "+str(relativeY))
+            #cropped_image = current_image.copy(150,150,150,150) # Image used is full size of image -> Convert pos-coordinates to rational numbers -> store x/y as (x,y) tuple?
+
+            cropped_image = current_image.copy(relativeX,relativeY,relative_side_length,relative_side_length) # Image used is full size of image -> Convert pos-coordinates to rational numbers -> store x/y as (x,y) tuple?
+            # current_image is the original image, pre-scaling. Therefore, scaling must be reapplied in order to keep consistency
+
+            # relativeX = self.xPos[0]/self.xPos[1])*current_image.size().width()  
+            #
+            # copy( ,  (self.yPos[0]/self.yPos[1])*current_image.height()  )
+
+            cropped_image.save("export.jpg","JPG") # check if pos works in revese
+            print("exported") # TODO Compartmentalise! Check if saving works independently etc.
+            self.EXPORT_FLAG = False
+            super(PaintableLabel, self).paintEvent(event)
+        else:
+            print("pos is "+str(self.xPos)+" "+str(self.yPos))
         # forward event.x and event.y into draw function
         # mouseEvent pos is given relative to widget, so imagebox
         #if((self.size().width()-30 > event.x() > 30) and (self.size().height()-30 > event.y() >30)):
-        super(PaintableLabel, self).paintEvent(event)
-        if(self.xPos > self.RECT_SIDE_LENGTH or self.yPos > self.RECT_SIDE_LENGTH):
-            painter = QPainter()
-            painter.begin(self)
-            #painter.drawPixmap(0,0,self.pixmap())
-            painter.setPen(Qt.red)
+            super(PaintableLabel, self).paintEvent(event)
+            if(self.xPos[0] > self.RECT_SIDE_LENGTH or self.yPos[0] > self.RECT_SIDE_LENGTH):
+                painter = QPainter()
+                painter.begin(self)
+                #painter.drawPixmap(0,0,self.pixmap())
+                painter.setPen(Qt.red)
             # paintevents are called as part of updates, check behaviour, may have to extend label update()
-            painter.drawRect(self.xPos-int(self.RECT_SIDE_LENGTH/2), self.yPos-int(self.RECT_SIDE_LENGTH/2), self.RECT_SIDE_LENGTH, self.RECT_SIDE_LENGTH)
+                painter.drawRect(self.xPos[0]-int(self.RECT_SIDE_LENGTH/2), self.yPos[0]-int(self.RECT_SIDE_LENGTH/2), self.RECT_SIDE_LENGTH, self.RECT_SIDE_LENGTH)
         #self.update()
-            painter.end()
+                painter.end()
 
 
 
@@ -629,6 +682,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # reset image box coordinates
         imgBox = self.findChild(QScrollArea, 'image_panel').widget()
+        imgBox.EXPORT_FLAG = True
         imgBox.imgFwd()
 
     def show_prev_image(self):
@@ -759,10 +813,17 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 except IndexError:
                     print("oob")
                     painter_tuple = (0,0)
-                
-                relative_x = round(painter_tuple[0]/(imgBox.size().width()), 2)
-                relative_y = round(painter_tuple[1]/(imgBox.size().height()),2)
-                relative_SL =  round(imgBox.RECT_SIDE_LENGTH/(imgBox.size().width()),2)
+                # change to rational number       
+                #relative_x = round(painter_tuple[0]/(imgBox.size().width()), 2)
+                #relative_y = round(painter_tuple[1]/(imgBox.size().height()),2)
+                #relative_SL =  round(imgBox.RECT_SIDE_LENGTH/(imgBox.size().width()),2)
+
+                relative_x = str(painter_tuple[0])+"/"+str(imgBox.size().width())
+                relative_y = str(painter_tuple[1])+"/"+str(imgBox.size().height())
+                relative_SL= str(imgBox.RECT_SIDE_LENGTH)+"/"+str(imgBox.size().width())
+
+
+
 
                 writer.writerow([img_name] + list(labels_one_hot) + [relative_x, relative_y, imgBox.RECT_SIDE_LENGTH]) 
                 # TODO kuvakoordinaattien skaalaus, harkitse suhteellista sijaintia?em.45% leveys 30% kork
