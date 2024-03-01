@@ -48,6 +48,34 @@ class PaintableLabel(QLabel):
     RECT_SIDE_LENGTH = 150 # should always be an even number to prevent rounding errors
     EXPORT_FLAG = False
     # add boolean flag to class to determine whether to export or not
+
+    def __init__(self):
+        super().__init__()
+        side_length_indicator = QLabel(self)
+        side_length_indicator.setText(str(self.RECT_SIDE_LENGTH))
+        side_length_indicator.setObjectName("rectlengthlabel")
+        #side_length_indicator.move()
+        shrink_sides = QShortcut(QKeySequence("q"), self)
+        shrink_sides.activated.connect(self.shrink_area)
+        grow_sides = QShortcut(QKeySequence("r"), self)
+        grow_sides.activated.connect(self.grow_area)
+
+
+    def shrink_area(self):
+        if self.RECT_SIDE_LENGTH > 20:
+            self.change_side_length(-15)
+
+    def grow_area(self):
+        if self.RECT_SIDE_LENGTH < 300:
+            self.change_side_length(15)
+
+    def change_side_length(self, amount):
+        self.RECT_SIDE_LENGTH += amount
+        rectlabel = self.findChild(QLabel, "rectlengthlabel")
+        rectlabel.setText(str(self.RECT_SIDE_LENGTH))
+
+
+
     def exportCroppedImage(self): # MUST BE WRITTEN INSIDE PAINTEVENT
         current_image = self.pixmap().toImage()
         smaller_image = QPixmap()
@@ -155,8 +183,22 @@ class PaintableLabel(QLabel):
             # relativeX = self.xPos[0]/self.xPos[1])*current_image.size().width()  
             #
             # copy( ,  (self.yPos[0]/self.yPos[1])*current_image.height()  )
+            parent_window = self.parent().parent().parent()
+            path_to_save = os.path.join(parent_window.input_folder, 'output/')
+            # path_to_save = os.path.join(parent_window.input_folder, 'output/')
 
-            cropped_image.save("export.jpg","JPG") # check if pos works in revese
+            #make_folder(path_to_save)
+
+            path = parent_window.img_paths[parent_window.counter]
+            filename = os.path.split(path)[-1]
+            #self.img_name_label.setText(filename)
+
+
+
+            #cropped_image.save("export.jpg","JPG") # check if pos works in revese
+            cropped_image.save(path_to_save+filename[0:-4]+"_export.jpg","JPG") # check if pos works in revese
+            # TODO get name of image
+
             print("exported") # TODO Compartmentalise! Check if saving works independently etc.
             self.EXPORT_FLAG = False
             super(PaintableLabel, self).paintEvent(event)
@@ -175,9 +217,7 @@ class PaintableLabel(QLabel):
                 painter.drawRect(self.xPos[0]-int(self.RECT_SIDE_LENGTH/2), self.yPos[0]-int(self.RECT_SIDE_LENGTH/2), self.RECT_SIDE_LENGTH, self.RECT_SIDE_LENGTH)
         #self.update()
                 painter.end()
-
-
-
+                
         # check that projected draw is within image boundaries
         # if true, draw box and save relative coordinates within image
         # remember to check for potential premade scaling
@@ -436,7 +476,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.label_buttons = []
 
         # Initialize Labels
-        self.image_box = PaintableLabel(self)
+        self.image_box = PaintableLabel()
 
         self.image_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
         self.image_box.setScaledContents(True)
