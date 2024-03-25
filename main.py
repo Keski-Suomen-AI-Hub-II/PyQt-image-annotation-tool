@@ -60,6 +60,14 @@ class PaintableLabel(QLabel):
         grow_sides = QShortcut(QKeySequence("r"), self)
         grow_sides.activated.connect(self.grow_area)
 
+        # Button to export image
+        export_image_shortcut = QShortcut(QKeySequence("e"), self)
+        export_image_shortcut.activated.connect(self.export_cropped_image)
+
+    def export_cropped_image(self):
+        self.EXPORT_FLAG = True
+        self.update()
+
 
     def shrink_area(self):
         if self.RECT_SIDE_LENGTH > 20:
@@ -91,6 +99,7 @@ class PaintableLabel(QLabel):
         self.xPos = (0, self.size().width())
         self.yPos = (0, self.size().height())
 
+
     def imgFwd(self):
         if (len(self.coordList) <= self.parent().parent().parent().num_images):
             self.currentIndex+=1
@@ -103,7 +112,7 @@ class PaintableLabel(QLabel):
             coord = self.coordList[self.currentIndex]
             eelf.xPos = coord[0]
             self.yPos = coord[1]
-        else:
+        elif(self.EXPORT_FLAG):
             #self.coordList[self.currentIndex] = (self.xPos, self.yPos)
             self.exportCroppedImage() 
             print("end of")
@@ -148,8 +157,7 @@ class PaintableLabel(QLabel):
         self.update()
    
     # x = (344, 566) y = (230, 332)
-    # conversion is xmax size * (344/566) and ymax*(230/332)
-
+    # conversion is xmax size * (344/566) and ymax*(230/332)   
 
     # As QLabel inherits from QWidget, we can access the position
     # and size from the superclass, making drawing in relation to 
@@ -722,8 +730,8 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         # reset image box coordinates
         imgBox = self.findChild(QScrollArea, 'image_panel').widget()
-        imgBox.EXPORT_FLAG = True
-        imgBox.imgFwd()
+        #imgBox.EXPORT_FLAG = True
+        #imgBox.imgFwd()
 
     def show_prev_image(self):
         """
