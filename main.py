@@ -52,7 +52,7 @@ class PaintableLabel(QLabel):
     def __init__(self):
         super().__init__()
         side_length_indicator = QLabel(self)
-        side_length_indicator.setText(str(self.RECT_SIDE_LENGTH))
+        side_length_indicator.setText("Adjust selection with Q/R" +'\n' + str(self.RECT_SIDE_LENGTH))
         side_length_indicator.setObjectName("rectlengthlabel")
         #side_length_indicator.move()
         shrink_sides = QShortcut(QKeySequence("q"), self)
@@ -80,8 +80,8 @@ class PaintableLabel(QLabel):
     def change_side_length(self, amount):
         self.RECT_SIDE_LENGTH += amount
         rectlabel = self.findChild(QLabel, "rectlengthlabel")
-        rectlabel.setText(str(self.RECT_SIDE_LENGTH))
-
+        rectlabel.setText("Adjust selected area with Q/R" +'\n' + str(self.RECT_SIDE_LENGTH))
+        self.update()
 
 
     def exportCroppedImage(self): # MUST BE WRITTEN INSIDE PAINTEVENT
@@ -592,6 +592,14 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
         next_im_kbs = QShortcut(QKeySequence("n"), self)
         next_im_kbs.activated.connect(self.show_next_image)
+        
+        # Add "Export" button
+        imgBox = self.findChild(QScrollArea, 'image_panel').widget()
+
+        exp_button = QtWidgets.QPushButton("[e]xport", self)
+        exp_button.move(self.img_panel_width + 260, next_prev_top_margin)
+        exp_button.clicked.connect(imgBox.export_cropped_image)
+
 
         # Add "generate csv file" button
         next_im_btn = QtWidgets.QPushButton("Generate csv", self)
