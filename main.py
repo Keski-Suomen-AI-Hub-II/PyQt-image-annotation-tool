@@ -65,6 +65,9 @@ class PaintableLabel(QLabel):
         export_image_shortcut.activated.connect(self.export_cropped_image)
 
     def export_cropped_image(self):
+        parent_window = self.parent().parent().parent()
+        path_to_save = os.path.join(parent_window.input_folder, 'output/')
+        make_folder(path_to_save)
         self.EXPORT_FLAG = True
         self.update()
 
@@ -80,7 +83,7 @@ class PaintableLabel(QLabel):
     def change_side_length(self, amount):
         self.RECT_SIDE_LENGTH += amount
         rectlabel = self.findChild(QLabel, "rectlengthlabel")
-        rectlabel.setText("Adjust selected area with Q/R" +'\n' + str(self.RECT_SIDE_LENGTH))
+        rectlabel.setText("Adjust selection with Q/R" +'\n' + str(self.RECT_SIDE_LENGTH))
         self.update()
 
 
