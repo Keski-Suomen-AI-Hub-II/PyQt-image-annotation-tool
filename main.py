@@ -207,7 +207,9 @@ class PaintableLabel(QLabel):
 
 
             #cropped_image.save("export.jpg","JPG") # check if pos works in revese
-            cropped_image.save(path_to_save+filename[0:-4]+"_export.jpg","JPG") # check if pos works in revese
+            #cropped_image.save(path_to_save+filename[0:-4]+"_export.jpg","JPG") # check if pos works in revese
+            cropped_image.save(path_to_save+filename[0:-4]+"_export"+filename[-4:],filename[-3:]) # check if pos works in revese
+
             # TODO get name of image
 
             print("exported") # TODO Compartmentalise! Check if saving works independently etc.
