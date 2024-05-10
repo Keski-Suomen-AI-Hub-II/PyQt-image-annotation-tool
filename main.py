@@ -508,15 +508,23 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         #    self.labels.append(seclab)
         kl_buttons = []
         for i in range(0,6):
-             kl_buttons.append(QtWidgets.QRadioButton("KL"+str(i), self))
-             self.labels.append("KL"+str(i))
-             self.num_labels = len(self.labels)
+            
+            if i == 5:
+                kl_buttons.append(QtWidgets.QRadioButton("Hylkää", self))
+            else:
+                kl_buttons.append(QtWidgets.QRadioButton("KL"+str(i), self))
+            self.labels.append("KL"+str(i))
+            self.num_labels = len(self.labels)
 
-             klbutton = kl_buttons[i]
+            klbutton = kl_buttons[i]
 
-             klbutton.move(self.img_panel_width+40+(60*i),500)
-             klbutton.setObjectName("KLButton_KL"+str(i))
-             klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
+            klbutton.move(self.img_panel_width+40+(60*i),500)
+            klbutton.setObjectName("KLButton_KL"+str(i))
+            if i < 5:
+                klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
+            else:
+                klbutton.clicked.connect(lambda state, x="KL_tyhj": self.set_label(x))
+
 
         #TODO lisää set_label kaikkiin -> merkkaa samalla tavalla jotta automaagisesti poistaa samanlaatuiset
         # tarkasta set_label yksityiskohtia varten
