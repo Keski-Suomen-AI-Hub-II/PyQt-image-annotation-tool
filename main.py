@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import re
+import argparse
 
 import numpy as np
 from PyQt5 import QtWidgets
@@ -42,6 +43,12 @@ class SetupWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Command line arguments 
+        parser = argparse.ArgumentParser()
+        ## Labelmode toggles certain options and elements on, that are not present in the default
+        parser.add_argument("--labelmode")
+        self.args = parser.parse_args()
+        
         # Window variables
         self.width = 800
         self.height = 940
@@ -55,10 +62,11 @@ class SetupWindow(QWidget):
 
         # Labels
         self.headline_folder = QLabel('1. Select folder containing images you want to label', self)
-        self.headline_num_labels = QLabel('2. Specify labels', self)
-        self.labels_file_description = QLabel(
-            'a) select file with labels (text file containing one label on each line)', self)
-        self.labels_inputs_description = QLabel('b) or specify how many unique labels you want to assign', self)
+        if self.args.labelmode:
+            self.headline_num_labels = QLabel('2. Specify labels', self)
+            self.labels_file_description = QLabel(
+                'a) select file with labels (text file containing one label on each line)', self)
+            self.labels_inputs_description = QLabel('b) or specify how many unique labels you want to assign', self)
 
         self.selected_folder_label = QLabel(self)
         self.selected_folder_label.setText(self.selected_folder)
@@ -66,24 +74,29 @@ class SetupWindow(QWidget):
         self.error_message = QLabel(self)
         # Buttons
         self.browse_button = QtWidgets.QPushButton("Browse", self)
-        self.confirm_num_labels = QtWidgets.QPushButton("Ok", self)
+        if self.args.labelmode:
+            self.confirm_num_labels = QtWidgets.QPushButton("Ok", self)
+            self.browse_labels_button = QtWidgets.QPushButton("Select labels", self)
         self.next_button = QtWidgets.QPushButton("Next", self)
-        self.browse_labels_button = QtWidgets.QPushButton("Select labels", self)
 
-        # Inputs
-        self.numLabelsInput = QLineEdit(self)
 
         # Validation
         self.onlyInt = QIntValidator()
 
         #layouts
         self.formLayout =QFormLayout()
-
+        
         #GroupBoxs
         self.groupBox = QGroupBox()
+        
+        if self.args.labelmode:
+            #Scrolls
+            self.scroll = QScrollArea(self)
+            # Inputs
+            self.numLabelsInput = QLineEdit(self)
 
-        #Scrolls
-        self.scroll = QScrollArea(self)
+
+
 
         # Init
         self.init_ui()
@@ -102,24 +115,27 @@ class SetupWindow(QWidget):
 
         self.browse_button.setGeometry(611, 59, 80, 28)
         self.browse_button.clicked.connect(self.pick_new)
+        if self.args.labelmode:    
+            # Input number of labels
+            top_margin_num_labels = 115
+            self.headline_num_labels.move(60, top_margin_num_labels)
+            self.headline_num_labels.setObjectName("headline")
 
-        # Input number of labels
-        top_margin_num_labels = 115
-        self.headline_num_labels.move(60, top_margin_num_labels)
-        self.headline_num_labels.setObjectName("headline")
+            self.labels_file_description.move(60, top_margin_num_labels + 30)
+            self.browse_labels_button.setGeometry(520, top_margin_num_labels + 25, 89, 28)
+            self.browse_labels_button.clicked.connect(self.pick_labels_file)
+            self.labels_inputs_description.move(60, top_margin_num_labels + 60)
+            self.numLabelsInput.setGeometry(75, top_margin_num_labels + 90, 60, 26)
 
-        self.labels_file_description.move(60, top_margin_num_labels + 30)
-        self.browse_labels_button.setGeometry(520, top_margin_num_labels + 25, 89, 28)
-        self.browse_labels_button.clicked.connect(self.pick_labels_file)
-        self.labels_inputs_description.move(60, top_margin_num_labels + 60)
-        self.numLabelsInput.setGeometry(75, top_margin_num_labels + 90, 60, 26)
-
-        self.numLabelsInput.setValidator(self.onlyInt)
-        self.confirm_num_labels.setGeometry(136, top_margin_num_labels + 89, 80, 28)
-        self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
+            self.numLabelsInput.setValidator(self.onlyInt)
+            self.confirm_num_labels.setGeometry(136, top_margin_num_labels + 89, 80, 28)
+            self.confirm_num_labels.clicked.connect(self.generate_label_inputs)
 
         # Next Button
-        self.next_button.move(360, 490)
+        if self.args.labelmode:
+            self.next_button.move(360, 490)
+        else:
+            self.next_button.move(600, 140)
         self.next_button.clicked.connect(self.continue_app)
         self.next_button.setObjectName("blueButton")
 
@@ -127,9 +143,10 @@ class SetupWindow(QWidget):
         self.error_message.setGeometry(20, 810, self.width - 20, 20)
         self.error_message.setAlignment(Qt.AlignCenter)
         self.error_message.setStyleSheet('color: red; font-weight: bold')
-
-        #initiate the ScrollArea
-        self.scroll.setGeometry(60, 260, 300, 200)
+        
+        if self.args.labelmode:
+            #initiate the ScrollArea
+            self.scroll.setGeometry(60, 260, 300, 200)
 
         # apply custom styles
         try:
@@ -223,17 +240,17 @@ class SetupWindow(QWidget):
         """
         if self.selected_folder == '':
             return False, 'Input folder has to be selected (step 1)'
+        if self.args.labelmode:     
+            num_labels_input = self.numLabelsInput.text().strip()
+            if num_labels_input == '' or num_labels_input == '0':
+                return False, 'Number of labels has to be number greater than 0 (step 2).'
 
-        num_labels_input = self.numLabelsInput.text().strip()
-        if num_labels_input == '' or num_labels_input == '0':
-            return False, 'Number of labels has to be number greater than 0 (step 2).'
+            if len(self.label_inputs) == 0:
+                return False, "You didn't provide any labels. Select number of labels and press \"Ok\""
 
-        if len(self.label_inputs) == 0:
-            return False, "You didn't provide any labels. Select number of labels and press \"Ok\""
-
-        for label in self.label_inputs:
-            if label.text().strip() == '':
-                return False, 'All label fields has to be filled (step 3).'
+            for label in self.label_inputs:
+                if label.text().strip() == '':
+                    return False, 'All label fields has to be filled (step 3).'
 
         # check that dir with images was selected
         check_images = get_img_paths(self.selected_folder)
@@ -265,6 +282,12 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
     def __init__(self, labels, input_folder):
         super().__init__()
+        
+         # Command line arguments 
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--labelmode")
+        self.args = parser.parse_args()
+        
 
         # init UI state
         self.title = 'PyQt5 - Annotation tool for assigning image classes'
@@ -293,6 +316,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.secondary_buttons = [] # List for secondary buttons next to primary buttons
         self.tertiary_buttons = [] # List for negation buttons
         self.quaternary_buttons = []
+        self.kl_buttons = []
 
         # Initialize Labels
         self.image_box = QLabel(self)
@@ -336,7 +360,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         self.curr_image_headline.setObjectName('headline')
 
         # image name label
-        self.img_name_label.setGeometry(125, 2, self.img_panel_width, 110)
+        self.img_name_label.setGeometry(145, 2, self.img_panel_width, 110)
 
         # progress bar (how many images have I labeled so far)
         self.progress_bar.setGeometry(20, 65, self.img_panel_width, 20)
@@ -358,7 +382,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         # image name
         path = self.img_paths[self.counter]
         filename = os.path.split(path)[-1]
-        self.img_name_label.setText(filename)
+        #self.img_name_label.setText(filename)
+        if len(filename) > 8:
+                self.img_name_label.setText(filename[:8])
+        else:
+                self.img_name_label.setText(filename)
 
         # progress bar
         self.progress_bar.setText(f'Image 1 of {self.num_images}')
@@ -408,122 +436,141 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         next_im_btn.move(self.img_panel_width + 30, 600)
         next_im_btn.clicked.connect(lambda state, filename='assigned_classes': self.generate_csv(filename))
         next_im_btn.setObjectName("blueButton")
-
-        # Create button for each label
-        x_shift = 0  # variable that helps to compute x-coordinate of button in UI
         
+        #parser = argparse.ArgumentParser()
+        #parser.add_argument("--labelmode")
+    
+        #args = parser.parse_args()
+        
+        #kl_buttons = []
 
-        labels_end = int(len(self.labels)/3)
-        primary_labels = self.labels[0:labels_end]
-        secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
-        button_groups = []
-
-
-        for i, label in enumerate(primary_labels):
+        labelMode = False
+        if self.args.labelmode:
+            # Create button for each label
+            x_shift = 0  # variable that helps to compute x-coordinate of button in UI
             
 
-            self.label_buttons.append(QtWidgets.QRadioButton(label, self))
-            button = self.label_buttons[i]
-
-            button.setObjectName("labelButton_"+label)
-                        
-
-            # create click event (set label)
-            # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
-            button.clicked.connect(lambda state, x=label: self.set_label(x))
-
-            # create keyboard shortcut event (set label)
-            # shortcuts start getting overwritten when number of labels >9
-            label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
-            label_kbs.activated.connect(lambda x=label: self.set_label(x))
+            labels_end = int(len(self.labels)/3)
+            primary_labels = self.labels[0:labels_end]
+            secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
+            button_groups = []
             
-            # place button in GUI (create multiple columns if there is more than 10 button)
-            y_shift = (30 + 10) * (i % 10)
-            if (i != 0 and i % 10 == 0):
-                x_shift += 120
-                y_shift = 0
+            for i, label in enumerate(primary_labels):
+                
 
-            button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
-            
-            # Create second button for unsure tag
-            self.secondary_buttons.append(QtWidgets.QRadioButton(label+"_epaselva", self))
+                self.label_buttons.append(QtWidgets.QRadioButton(label, self))
+                button = self.label_buttons[i]
 
-            button2 = self.secondary_buttons[i] # 
-            button2.setObjectName("labelButtonUnsure_"+label)
-            #painikejoukko.addButton(button2)
-            button2.clicked.connect(lambda state, x=secondary_labels[i]: self.set_label(x)) #            
-            label_kbs = QShortcut(QKeySequence("CTRL+"f"{i+1 % 10}"), self)
-            label_kbs.activated.connect(lambda x=secondary_labels[i]: self.set_label(x))
+                button.setObjectName("labelButton_"+label)
+                            
 
+                # create click event (set label)
+                # https://stackoverflow.com/questions/35819538/using-lambda-expression-to-connect-slots-in-pyqt
+                button.clicked.connect(lambda state, x=label: self.set_label(x))
 
-            # TODO clicked-tapahtuma myös yhteinen, rastii molemmat boksit, täytyy korjata
-            # label täytyy olla kuitenkin olemassa labels-taulukossa, jotta voi kirjata (muuten KeyError)
-            # joko lisää epäselvät labeleihin, tai muuta taulukointifunktiota
-            #secondary_labels.append(label+"_epaselva")
+                # create keyboard shortcut event (set label)
+                # shortcuts start getting overwritten when number of labels >9
+                label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+                label_kbs.activated.connect(lambda x=label: self.set_label(x))
+                
+                # place button in GUI (create multiple columns if there is more than 10 button)
+                y_shift = (30 + 10) * (i % 10)
+                if (i != 0 and i % 10 == 0):
+                    x_shift += 120
+                    y_shift = 0
 
+                button.move(self.img_panel_width + 25 + x_shift, y_shift + 120)
+                
+                # Create second button for unsure tag
+                self.secondary_buttons.append(QtWidgets.QRadioButton(label+"_epaselva", self))
 
-            button2.move(self.img_panel_width + 130 + x_shift, y_shift + 120)
-            
-            #self.tertiary_buttons.append(QtWidgets.QRadioButton(label[:3]+"_ei", self))
-            self.tertiary_buttons.append(QtWidgets.QRadioButton(label+"_ei", self))
-
-
-            button3 = self.tertiary_buttons[i] #
-            button3.setObjectName("labelButtonAbsent_"+label)
-            # No functionalities are added to the None-button, as the radio nature automatically
-            
-            
-            # wipes past labels on exit
-            button3.clicked.connect(lambda state, x=label+"_ei": self.set_label(x))
+                button2 = self.secondary_buttons[i] # 
+                button2.setObjectName("labelButtonUnsure_"+label)
+                #painikejoukko.addButton(button2)
+                button2.clicked.connect(lambda state, x=secondary_labels[i]: self.set_label(x)) #            
+                label_kbs = QShortcut(QKeySequence("CTRL+"f"{i+1 % 10}"), self)
+                label_kbs.activated.connect(lambda x=secondary_labels[i]: self.set_label(x))
 
 
-            button3.move(self.img_panel_width + 235 + x_shift, y_shift + 120)
+                # TODO clicked-tapahtuma myös yhteinen, rastii molemmat boksit, täytyy korjata
+                # label täytyy olla kuitenkin olemassa labels-taulukossa, jotta voi kirjata (muuten KeyError)
+                # joko lisää epäselvät labeleihin, tai muuta taulukointifunktiota
+                #secondary_labels.append(label+"_epaselva")
 
-            # Create buttons for defaulting radiobuttons between annotations onto
-            # The set label is ignored, but exists for the purpose of clearing labels in the same group
-            self.quaternary_buttons.append(QtWidgets.QRadioButton(label+"_tyhj",self))
 
-            button4 = self.quaternary_buttons[i]
-            button4.setObjectName("labelButtonNull_"+label)
-            button4.clicked.connect(lambda state, x=label+"_tyhj": self.set_label(x))
-            
-            button4.move(self.img_panel_width + 340 + x_shift, y_shift + 120)
+                button2.move(self.img_panel_width + 130 + x_shift, y_shift + 120)
+                
+                #self.tertiary_buttons.append(QtWidgets.QRadioButton(label[:3]+"_ei", self))
+                self.tertiary_buttons.append(QtWidgets.QRadioButton(label+"_ei", self))
 
-            # Create button group to toggle between radiobuttons
-            painikejoukko = QtWidgets.QButtonGroup(self) 
-            
-            painikejoukko.addButton(button)
-            painikejoukko.addButton(button2)
-            painikejoukko.addButton(button3)
-            painikejoukko.addButton(button4)
-            painikejoukko.setExclusive(True)
-            painikejoukko.setObjectName("buttonGroup"+label)
-            
-            #print(painikejoukko.buttons())
-            #button_groups.append(painikejoukko)
+
+                button3 = self.tertiary_buttons[i] #
+                button3.setObjectName("labelButtonAbsent_"+label)
+                # No functionalities are added to the None-button, as the radio nature automatically
+                
+                
+                # wipes past labels on exit
+                button3.clicked.connect(lambda state, x=label+"_ei": self.set_label(x))
+
+
+                button3.move(self.img_panel_width + 235 + x_shift, y_shift + 120)
+
+                # Create buttons for defaulting radiobuttons between annotations onto
+                # The set label is ignored, but exists for the purpose of clearing labels in the same group
+                self.quaternary_buttons.append(QtWidgets.QRadioButton(label+"_tyhj",self))
+
+                button4 = self.quaternary_buttons[i]
+                button4.setObjectName("labelButtonNull_"+label)
+                button4.clicked.connect(lambda state, x=label+"_tyhj": self.set_label(x))
+                
+                button4.move(self.img_panel_width + 340 + x_shift, y_shift + 120)
+
+                # Create button group to toggle between radiobuttons
+                painikejoukko = QtWidgets.QButtonGroup(self) 
+                
+                painikejoukko.addButton(button)
+                painikejoukko.addButton(button2)
+                painikejoukko.addButton(button3)
+                painikejoukko.addButton(button4)
+                painikejoukko.setExclusive(True)
+                painikejoukko.setObjectName("buttonGroup"+label)
+                
+                #print(painikejoukko.buttons())
+                #button_groups.append(painikejoukko)
 
 
         # Append created secondary labels afterwards to prevent infinite looping
         #for seclab in secondary_labels:
         #    self.labels.append(seclab)
-        kl_buttons = []
-        for i in range(0,6):
-            
-            if i == 5:
-                kl_buttons.append(QtWidgets.QRadioButton("Hylkää", self))
-            else:
-                kl_buttons.append(QtWidgets.QRadioButton("KL"+str(i), self))
-            self.labels.append("KL"+str(i))
-            self.num_labels = len(self.labels)
+        else:
+            #kl_buttons = []
+            for i in range(0,6):
+                
+                if i == 5:
+                    self.kl_buttons.append(QtWidgets.QRadioButton("Hylkää", self))
+                else:
+                    self.kl_buttons.append(QtWidgets.QRadioButton("KL"+str(i), self))
+                self.labels.append("KL"+str(i))
+                self.num_labels = len(self.labels)
 
-            klbutton = kl_buttons[i]
+                klbutton = self.kl_buttons[i]
 
-            klbutton.move(self.img_panel_width+40+(60*i),500)
-            klbutton.setObjectName("KLButton_KL"+str(i))
-            if i < 5:
-                klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
-            else:
-                klbutton.clicked.connect(lambda state, x="KL_tyhj": self.set_label(x))
+                klbutton.move(self.img_panel_width+40+(60*i),500)
+                klbutton.setObjectName("KLButton_KL"+str(i))
+                if i < 5:
+                    klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
+                    label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+                    label_kbs.activated.connect(lambda x="KL"+str(i): self.set_label(x))
+                    label_kbs.activated.connect(lambda x=klbutton: x.toggle())
+                else:
+                    klbutton.clicked.connect(lambda state, x="KL_tyhj": self.set_label(x))
+                    label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+                    label_kbs.activated.connect(lambda x="KL_tyhj": self.set_label(x))
+                    label_kbs.activated.connect(lambda x=klbutton: x.toggle())
+
+                # label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+                # label_kbs.activated.connect(lambda x=label: self.set_label(x))
+ 
 
 
         #TODO lisää set_label kaikkiin -> merkkaa samalla tavalla jotta automaagisesti poistaa samanlaatuiset
@@ -650,7 +697,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             self.scale_factor = 1
 
             self.set_image(path)
-            self.img_name_label.setText(filename)
+            if len(filename) > 8:
+                self.img_name_label.setText(filename[:8])
+            else:
+                self.img_name_label.setText(filename)
+
             self.progress_bar.setText(f'Image {self.counter + 1} of {self.num_images}')
             self.set_button_color(filename)
             self.csv_generated_message.setText('')
@@ -675,7 +726,11 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 self.scale_factor = 1
 
                 self.set_image(path)
-                self.img_name_label.setText(filename)
+                #self.img_name_label.setText(filename)
+                if len(filename) > 8:
+                    self.img_name_label.setText(filename[:8])
+                else:
+                    self.img_name_label.setText(filename)
                 self.progress_bar.setText(f'Image {self.counter + 1} of {self.num_images}')
 
                 self.set_button_color(filename)
@@ -786,7 +841,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             assigned_labels = self.assigned_labels[filename]
         else:
             assigned_labels = []
-        combined_buttons = self.label_buttons+self.secondary_buttons+self.tertiary_buttons
+        combined_buttons = self.label_buttons+self.secondary_buttons+self.tertiary_buttons+self.kl_buttons
         # TODO consider an if-statement to fix radiobutton-checkboxing
         # regex-match relevant children (label of current button) in buttons
         
