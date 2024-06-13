@@ -47,6 +47,7 @@ class SetupWindow(QWidget):
         parser = argparse.ArgumentParser()
         ## Labelmode toggles certain options and elements on, that are not present in the default
         parser.add_argument("--labelmode")
+        parser.add_argument("--folderArg")
         self.args = parser.parse_args()
         
         # Window variables
@@ -161,11 +162,16 @@ class SetupWindow(QWidget):
         """
         shows a dialog to choose folder with images to label
         """
-        dialog = QFileDialog()
-        folder_path = dialog.getExistingDirectory(None, "Select Folder")
 
-        self.selected_folder_label.setText(folder_path)
-        self.selected_folder = folder_path
+        if self.args.folderArg:
+            self.selected_folder_label.setText(self.args.folderArg)
+            self.selected_folder = self.args.folderArg
+        else:
+            dialog = QFileDialog()
+            folder_path = dialog.getExistingDirectory(None, "Select Folder")           
+            self.selected_folder_label.setText(folder_path)
+            self.selected_folder = folder_path
+        
 
     def pick_labels_file(self):
         options = QFileDialog.Options()
@@ -286,6 +292,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
          # Command line arguments 
         parser = argparse.ArgumentParser()
         parser.add_argument("--labelmode")
+        parser.add_argument("--folderArg")
         self.args = parser.parse_args()
         
 
@@ -547,7 +554,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
             for i in range(0,6):
                 
                 if i == 5:
-                    self.kl_buttons.append(QtWidgets.QRadioButton("Hylkää", self))
+                    self.kl_buttons.append(QtWidgets.QRadioButton("KLH", self))
                 else:
                     self.kl_buttons.append(QtWidgets.QRadioButton("KL"+str(i), self))
                 self.labels.append("KL"+str(i))
@@ -559,17 +566,21 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 klbutton.setObjectName("KLButton_KL"+str(i))
                 if i < 5:
                     klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
-                    label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
+                    label_kbs = QShortcut(QKeySequence(f"{i % 10}"), self)
                     label_kbs.activated.connect(lambda x="KL"+str(i): self.set_label(x))
                     label_kbs.activated.connect(lambda x=klbutton: x.toggle())
                 else:
-                    klbutton.clicked.connect(lambda state, x="KL_tyhj": self.set_label(x))
-                    label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
-                    label_kbs.activated.connect(lambda x="KL_tyhj": self.set_label(x))
+                    klbutton.clicked.connect(lambda state, x="KLH": self.set_label(x))
+                    label_kbs = QShortcut(QKeySequence(f"{i % 10}"), self)
+                    label_kbs.activated.connect(lambda x="KLH": self.set_label(x))
                     label_kbs.activated.connect(lambda x=klbutton: x.toggle())
+                    klbutton.setObjectName("KLButton_KLH")
 
                 # label_kbs = QShortcut(QKeySequence(f"{i+1 % 10}"), self)
                 # label_kbs.activated.connect(lambda x=label: self.set_label(x))
+            self.labels.append("KLH")
+            self.num_labels = len(self.labels)
+
  
 
 
