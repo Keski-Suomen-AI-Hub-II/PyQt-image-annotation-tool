@@ -183,12 +183,12 @@ class SetupWindow(QWidget):
                 content = f.readlines()
 
             labels = [line.rstrip('\n') for line in content]
-            labellength = len(labels) # Local copy of variable as following loop will append onto existing list
-            for i in range(0,labellength):
-                labels.append(labels[i]+"_epaselva")
-            
-            for i in range(0, labellength): 
-                labels.append(labels[i]+"_ei")
+#            labellength = len(labels) # Local copy of variable as following loop will append onto existing list
+#            for i in range(0,labellength):
+#                labels.append(labels[i]+"_epaselva")
+#            
+#            for i in range(0, labellength): 
+#                labels.append(labels[i]+"_ei")
 
             print(labels)
             self.numLabelsInput.setText(str(len(labels)))
@@ -275,6 +275,7 @@ class SetupWindow(QWidget):
         if form_is_valid:
             label_values = []
             for label in self.label_inputs:
+                print(label.text().strip())
                 label_values.append(label.text().strip())
 
             self.close()
@@ -451,17 +452,32 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         
         #kl_buttons = []
 
-        labelMode = False
+        #labelMode = False
         if self.args.labelmode:
             # Create button for each label
             x_shift = 0  # variable that helps to compute x-coordinate of button in UI
-            
 
-            labels_end = int(len(self.labels)/3)
+            secondary_labels = []
+            tertiary_labels = []
+
+            labellength = len(self.labels) # Local copy of variable as following loop will append onto existing list
+            for i in range(0,labellength):
+                secondary_labels.append(self.labels[i]+"_epaselva")
+#            
+            for i in range(0, labellength): 
+                tertiary_labels.append(self.labels[i]+"_ei")
+
+            labels_end = int(len(self.labels))
             primary_labels = self.labels[0:labels_end]
-            secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
+            #secondary_labels = self.labels[labels_end:len(self.labels)] # Initialize array to append secondary 'unsure' labels to after initial buttons have been created
+             
+
             button_groups = []
             
+            self.labels.extend(secondary_labels)
+            self.labels.extend(tertiary_labels)
+            self.num_labels = len(self.labels)
+
             for i, label in enumerate(primary_labels):
                 
 
@@ -505,7 +521,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 #secondary_labels.append(label+"_epaselva")
 
 
-                button2.move(self.img_panel_width + 130 + x_shift, y_shift + 120)
+                button2.move(self.img_panel_width + 230 + x_shift, y_shift + 120)
                 
                 #self.tertiary_buttons.append(QtWidgets.QRadioButton(label[:3]+"_ei", self))
                 self.tertiary_buttons.append(QtWidgets.QRadioButton(label+"_ei", self))
@@ -520,7 +536,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 button3.clicked.connect(lambda state, x=label+"_ei": self.set_label(x))
 
 
-                button3.move(self.img_panel_width + 235 + x_shift, y_shift + 120)
+                button3.move(self.img_panel_width + 535 + x_shift, y_shift + 120)
 
                 # Create buttons for defaulting radiobuttons between annotations onto
                 # The set label is ignored, but exists for the purpose of clearing labels in the same group
@@ -530,7 +546,13 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
                 button4.setObjectName("labelButtonNull_"+label)
                 button4.clicked.connect(lambda state, x=label+"_tyhj": self.set_label(x))
                 
-                button4.move(self.img_panel_width + 340 + x_shift, y_shift + 120)
+                button4.move(self.img_panel_width + 790 + x_shift, y_shift + 120)
+                
+                # Resize buttons to make room for longer labels TODO tie logic to button placement prevent text clipping
+                button.adjustSize()
+                button2.adjustSize()
+                button3.adjustSize()
+                button4.adjustSize()
 
                 # Create button group to toggle between radiobuttons
                 painikejoukko = QtWidgets.QButtonGroup(self) 
@@ -562,7 +584,7 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
 
                 klbutton = self.kl_buttons[i]
 
-                klbutton.move(self.img_panel_width+40+(60*i),500)
+                klbutton.move(self.img_panel_width+40+(100*i),500)
                 klbutton.setObjectName("KLButton_KL"+str(i))
                 if i < 5:
                     klbutton.clicked.connect(lambda state, x="KL"+str(i): self.set_label(x))
@@ -883,14 +905,19 @@ class LabelerWindow(QMainWindow): #class LabelerWindow(QWidget):
         :param num_classes: number of classes in dataset so I know how long the vector should be
         :return:
         """
-
+        print(labels)
         # create mapping from label name to its index for better efficiency {label : int}
         label_to_int = dict((c, i) for i, c in enumerate(self.labels))
+        
+        # TODO compare image labels to universal (self.labels) to represent all opportunities
 
         # initialize array to save selected labels
         zero_one_arr = np.zeros([self.num_labels], dtype=int)
-        for label in labels:
+        
+        for label in labels: # NOTE this will produce n=len(labels)
+            print(label_to_int) # debug
             zero_one_arr[label_to_int[label]] = 1
+
 
         return zero_one_arr
 
