@@ -34,6 +34,11 @@ This script is a fork of https://github.com/robertbrada/PyQt-image-annotation-to
    ```bash
     python main.py
     ```
+   Annotating can be done through preset KL-grades, or through custom labels. 
+   To access custom labeling, run the program with the argument --labelmode true. 
+   In custom labeling, the program automatically generates additional classes for unsure and negative versions of said labels.
+   In addition, a button is also generated for empty classification, to provide radiobutton functionality.
+   The annotation image folder can also be automatically specified with --folderArg %PATH%
 
 ## Keyboard shortcuts
 
